@@ -72,12 +72,12 @@ macro "single_gaussian_horizontal"{
  	Plot.show;
  	*/
     //Print the results
-    /*
+    
     print("=======Gaussian Fit=======");
     print("Relative position=" + d2s(c,6));
     print("Absolute position=" + abspos);
     print("Fit Width=" + fitWidth);
-    */
+    print("Max=" + b);
     //This code prints all fit parameters
     //for (j=0; j<Fit.nParams; j++)
     //print("   p["+j+"]="+d2s(Fit.p(j),6));
