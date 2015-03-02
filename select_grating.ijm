@@ -1,7 +1,6 @@
 
 //This macro prompts the user for a grating, and then adds all of the information regarding that specific grating to generic variables
 //Gets all parameters from param.txt as well as from the itxt file. 
-
 macro "select_grating"{
 	//check if this image has already been processed
 	if(endsWith(substring(getTitle(), 0, lastIndexOf(getTitle(), ".")),"_prep")){
@@ -10,12 +9,12 @@ macro "select_grating"{
 	//First get the data directory, original image name, filebase, and param file name and location.
 	var dirname = replace(getDirectory("image"),"\\","\/"); //replace backslashes with forward slashes
 	var imgfile = getInfo("image.filename");
-	//var filebase=substring(getTitle(), 0, lastIndexOf(getTitle(), ".")); //Get basename of file before ".jpg", without dir.
-	var dirname = "C:\\Fiji.app\\macros\\";
-	var paramfile = dirname+"param.txt"; //full path of param.txt file.
+	var filebase=substring(getTitle(), 0, lastIndexOf(getTitle(), ".")); //Get basename of file before ".jpg", without dir.
+	var paramfile = dirname+"param.txt"; //full path of */param.txt file.
+//print(paramfile);	
 	//Set the param file to the List
-	List.setList(File.openAsString(paramfile)); //Load variables into List from param txt file
-	//print (List.getList);
+	List.setList(File.openAsString(paramfile));//Load variables into List from param txt file
+
 	//Now is a good time to confirm image coordinates mapping to lab coordinates
 	if((List.get("imgXaxis") != "labX")||(List.get("imgYaxis") != "labY")){
 		waitForUser("Sorry can only handle matched image and lab coordinates.");	
@@ -23,48 +22,25 @@ macro "select_grating"{
 	
 	//Add general variables to the list
 	List.set("dirname",dirname);
-	//List.set("imgfile",imgfile);
-//	List.set("filebase",filebase);
-	//List.set("itxtfile",dirname+filebase+".txt"); //add name of text file produced automatically by epics containing motor positions to the List
+	List.set("imgfile",imgfile);
+	List.set("filebase",filebase);
+	List.set("itxtfile",dirname+filebase+".txt"); //add name of text file produced automatically by epics containing motor positions to the List
 	
-	//Ask user which object to use and set ggrtnum depending on slit, grating or samplenewArray("Grating", "Slit", "Sample");
-	Dialog.create("Selection");
-	Dialog.addChoice("Select object", newArray("Grating", "Slit", "Sample"));
-	Dialog.addChoice("Object Number", newArray(0,1,2));
-	Dialog.addMessage("Align Single Mirror Options:");
+	//Ask user which grating to use and set grtnum
+	Dialog.create("Select grating");
+	Dialog.addNumber("Grating number", 0);
+	Dialog.addMessage("Align Single Mirror Options:")
 	Dialog.addCheckbox("Draw Line", true);
-	if(roiManager("count")>=2)
-	{
+	if(roiManager("count")>=2){
 		Dialog.addCheckbox("Use previous ROI", true);
 	}
-	else
-	{
-		List.set("useprevroi",false);
-	}
-	Dialog.show();	
-	obj = Dialog.getChoice();
-	num = parseInt(Dialog.getChoice());
-
-	List.set("objNum", num);
-	if(obj == "Grating")
-	{
-		ggrtnum = "g" + num;
-		List.set("ggrtnum", ggrtnum);
-	}
-	else if(obj == "slit")
-	{
-		slitnum = "s" + num;
-		List.set("ggrtnum", slitnum);
-	}
-	else
-	{
-		samplenum = "o" + num;
-		List.set("ggrtnum", samplenum);
-	}
-
-//	print(List.get("ggrtnum"));
+	else{List.set("useprevroi",false);}
+	Dialog.show();
+	grtnum=Dialog.getNumber();
+	List.set("grtnum",grtnum);
+	ggrtnum= "g" + grtnum;
+	List.set("ggrtnum",ggrtnum);
 	List.set("drawline",Dialog.getCheckbox());
-	C:\Fiji.app\macros
 	if(roiManager("count")>=2){
 		useprevroi=Dialog.getCheckbox(); 
 		List.set("useprevroi",useprevroi);
@@ -77,10 +53,7 @@ macro "select_grating"{
  		}
 	}
 	//Make substitutions
-	List.set("ss_g_dist",List.getValue("ss_g"+num+"_dist")); //In mm
-	List.set("s0_g_dist", List.getValue("s0_g"+num+"_dist")); //In mm
-	List.set("s2_g_dist", List.getValue("s2_g"+num+"_dist")); //In mm
-	
+	List.set("ss_g_dist",List.getValue("ss_g"+grtnum+"_dist")); //In mm
 	List.set("Y_targ", toString(List.getValue(ggrtnum+"_Y_targ"),8)); //In mm
 	List.set("RX_targ", toString(List.getValue(ggrtnum+"_RX_targ"),8)); //In milliradians
 
@@ -116,10 +89,11 @@ macro "select_grating"{
 			}
 		}
 	}
-//print(List.getValue("RXmotval"));	
+//print(List.getValue("RXmotval"));
+//print("hereherhehrrehr");	
 //print(parseFloat(List.get("RXmotval")));
 //print(d2s(parseFloat(List.get("RXmotval")),9));
-	print(List.getList());
+//print(List.getList());
 
 	return List.getList;
 }

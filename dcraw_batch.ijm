@@ -23,11 +23,10 @@ numNefs = 0;
 filenum = 0;
 while (filenum < fileList.length) {
     id = fileList[filenum++];
-    if(endsWith(dirSrc + id, ".nef" ) || endsWith(dirSrc+id, ".NEF")){
+    if(endsWith(dirSrc + id, ".nef")){
         numNefs++;
     }
 }    
-
 print(numNefs + " out of " +  fileList.length + " files are NEF");
 print(caption + " - Starting");
 print("Reading from : " + dirSrc);
@@ -47,13 +46,11 @@ else{
 }
 
 //Run the batch loop
-progress=0;
 while (fileNumber < fileList.length) {
     id = fileList[fileNumber++];
-    
-    if(endsWith(dirSrc + id, ".nef") || endsWith(dirSrc+id, ".NEF")){
-    	progress+=1;
-        print(toString(progress) + "/" + toString(numNefs) + ": " + id);
+
+    if(endsWith(dirSrc + id, ".nef")){
+        print(toString(fileNumber) + "/" + toString(numNefs) + ": " + id);
         // Read input image
         run("DCRaw Reader...",
             "open=[" + dirSrc + id + "] " +
