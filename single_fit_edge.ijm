@@ -1,6 +1,6 @@
 /* 
  *  Finds LSF from edge profile and offer you a choice for either Gaussian
- *  or Lorentzian fit. Return the FWHM of the LSF profile.Adapted from macro 
+ *  or Lorentzian fit. Return the FWHM of the LSF profile. Adapted from macro 
  *  single_edge_horizontal.ijm
  *  
  *  __author__			=	'Alireza Panna'
@@ -10,19 +10,25 @@
  */
 
 macro "single_fit_edge"{
-	// Display menu choices
+	args = getArgument();
+	if (args == ""){
+		fit_choice = newArray("Gaussian", "Lorentzian");
+    	edge_choice = newArray("Horizontal", "Vertical");
+  		Dialog.create("Menu");
+		Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
+  		Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
+  		Dialog.show();
+  		lsf_edge = Dialog.getChoice();
+    	fit_func = Dialog.getChoice();
+	}
+	else{
+		arr = split(args," ");
+		lsf_edge = arr[0];
+    	fit_func = arr[1];
+	}
 	imgname = getTitle(); 
 	run("Set Scale...", "distance=0 global");
-    roiname = Roi.getName;
-    fit_choice = newArray("Gaussian", "Lorentzian");
-    edge_choice = newArray("Horizontal", "Vertical");
-    Dialog.create("Menu");
-	Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
-    Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
-    Dialog.show();
-    lsf_edge = Dialog.getChoice();
-    fit_func = Dialog.getChoice();
-    
+    roiname = Roi.getName;    
     // Plot ESF profile, get values and close profile
 	if (lsf_edge == "Vertical") {
 		setKeyDown("ctrl");
@@ -79,8 +85,8 @@ macro "single_fit_edge"{
     if (fit_func == "Gaussian") {
     	Fit.plot();
     	FWHM = FWHM_g;
+    	rename(roiname+" "+imgname);
 	}
-	rename(roiname+" "+imgname);
 	if (fit_func == "Lorentzian") {
 	// Define the Lorentzian fit function to use
 		/* a = Amplitude
