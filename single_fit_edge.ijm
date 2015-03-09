@@ -73,6 +73,7 @@ macro "single_fit_edge"{
     	peak_g = Fit.p(1)-Fit.p(0);
     	width_g = Fit.p(3);
     	FWHM_g = 2*sqrt(2*log(2))*width_g;
+    	area_g = sqrt(2*PI)*peak_g*width_g;
     }
 	else {
     	Fit.doFit("Gaussian", x, derivneg);
@@ -80,11 +81,14 @@ macro "single_fit_edge"{
     	peak_g = Fit.p(1)-Fit.p(0);
     	width_g = Fit.p(3);
     	FWHM_g = 2*sqrt(2*log(2))*width_g;
+    	area_g = sqrt(2*PI)*peak_g*width_g;
     }    
         
     if (fit_func == "Gaussian") {
     	Fit.plot();
     	FWHM = FWHM_g;
+    	PEAK = abs(peak_g);
+    	AREA = abs(area_g);
     	rename(roiname+" "+imgname);
 	}
 	if (fit_func == "Lorentzian") {
@@ -112,9 +116,11 @@ macro "single_fit_edge"{
     	mean_l = Fit.p(1);
     	FWHM_l = Fit.p(2);
     	FWHM = abs(FWHM_l);
+    	AREA = abs(peak_l*);
 	}
 	print(fit_func + " " + lsf_edge + " Edge FWHM"+":", FWHM);
 	outstr = toString(FWHM, 4);
-	// Return fwhm
-	return outstr;
+	outstr_1 = toString(AREA, 4);
+	// Return fwhm and peak
+	return outstr + " " + outstr_1;
 }
