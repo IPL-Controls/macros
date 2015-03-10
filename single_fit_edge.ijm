@@ -21,14 +21,17 @@ macro "single_fit_edge"{
   		Dialog.create("Menu");
 		Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
   		Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
+  		Dialog.addNumber("Camera Pixel Size (um)", 32.5);
   		Dialog.show();
   		lsf_edge = Dialog.getChoice();
     	fit_func = Dialog.getChoice();
+    	pix_size = parseFloat(Dialog.getNumber());
 	}
 	else{
 		arr = split(args," ");
 		lsf_edge = arr[0];
     	fit_func = arr[1];
+    	pix_size = 0;
 	}
 	imgname = getTitle(); 
 	// Remove scaling
@@ -70,11 +73,28 @@ macro "single_fit_edge"{
     // Now for mtf
     windowType="None"; //None, Hamming, Hann or Flattop
     mtf_arr = Array.fourier(deriv);
+    mtf_norm = newArray(mtf_arr.length);
+    mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
+    mtf_arr_max = mtf_arr_stat[1];
+   
   	f = newArray(lengthOf(mtf_arr));
   	for (i=0; i<lengthOf(mtf_arr); i++){
-   		 f[i] = i;
+  		 mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
+  		 if (pix_size != 0) {
+  		 	// Sampling period
+  			T = lengthOf(deriv)/(1/(pix_size*0.001));
+   		 	f[i] = i/T;
+  		 }
+  		 else{
+  		 	f[i] = i;
+  		 }
   	}
-  	Plot.create("MTF", "frequency bin", "MTF", f, mtf_arr);
+  	if (pix_size!=0){
+  		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
+  	}
+  	else{
+  		Plot.create("MTF", "frequency bin", "MTF", f, mtf_norm);
+  	}
   	Plot.show();
     // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
     Fit.doFit("Gaussian", x, deriv);
@@ -129,9 +149,9 @@ macro "single_fit_edge"{
     	peak_l = Fit.p(0);
     	mean_l = Fit.p(1);
     	FWHM_l = Fit.p(2);
+    	area_l = (abs(peak_l)*abs(FWHM_l))*((PI/2));//-atan(-2*mean_l/abs(FWHM_l)));
     	FWHM = abs(FWHM_l);
-    	// This needs to be changed.
-    	AREA = abs(peak_l);
+    	AREA = abs(area_l);
 	}
 	print(fit_func + " " + lsf_edge + " Edge FWHM"+":", FWHM);
 	outstr = toString(FWHM, 4);
