@@ -1,10 +1,13 @@
 /*
  * Generic extension of single_fit_edge to work for a stack of images.
  * 
- * __author_	=	'Alireza Panna'
- * __version__	=	'1.0'
- * __status__   =   "stable"
- * __date__		=	03/04/2015
+ * __author_		=	'Alireza Panna'
+ * __version__		=	'1.0'
+ * __status__   	=   "stable"
+ * __date__			=	03/04/2015
+ * __to-do__		=	1. get contrast from lorentzian area as well.
+ * 						2. find better way to get contrast (ESF step height)
+ * 						3. code formatting/comments etc
  */
 macro "stack_fit_edge"{
 	fit_choice = newArray("Gaussian", "Lorentzian");
@@ -19,7 +22,7 @@ macro "stack_fit_edge"{
     
 	imgname = getTitle(); 
     dir = getDirectory("image");
-    if (imgname == "stack"){
+    if (imgname == "Stack"){
     	Dialog.create("Scan Settings");
 		Dialog.addMessage("Update Scan settings:")
 		Dialog.addNumber("start:", 0);
@@ -32,17 +35,37 @@ macro "stack_fit_edge"{
     	y = newArray(nSlices);
     	x = newArray(nSlices);
     	p = newArray(nSlices);
+    	mtf_stack = 0;
+ //   	setBatchMode(true);
+ 		print (nSlices);
     	for (i=1; i<=nSlices; i++){
+    //		selectImage(imgname);
     		setSlice(i);
-    		d =  runMacro("single_fit_edge", args);
+    		d = runMacro("single_fit_edge", args);
+    		selectWindow("MTF");
+  	 		run("Copy");
+    		w = getWidth;
+  	 		h = getHeight;
+    		close();
+    		selectWindow("LSF");
+    		close();
+    		if (mtf_stack==0) {
+            	newImage("MTF Plots", "8-bit", w, h, 1);
+            	mtf_stack = getImageID;
+
+        	} 
+        	else {
+            	selectImage(mtf_stack);
+            	run("Add Slice");
+        	}
+        	run("Paste");
+  			
     		sp = split(d, " ");
     		y[i-1] = sp[0];
     		p[i-1] = sp[1];
-    	//	print (sp[1]);
-    		rename("image"+"_"+toString(i));
-     		selectWindow("image"+"_"+toString(i));
-    		close();
+    		selectImage(imgname);
      	}
+     	
 		temp = start;
  		for(i=1; i<=x.length; i++){	
      	  	x[i-1] = temp;
@@ -50,9 +73,10 @@ macro "stack_fit_edge"{
  		}	 
  		opt_fwhmz = plot2d(x, y);
  		opt_peakz = plot2d(x, p);
+ 		
 		f = File.open(dir+"edge_widths_contrast"+".txt");
     	print(f, "FWHM (pixel)"+"\t"+"Contrast (pixel)"+"\t"+"z (mm)"); 
-    	write(f, x, y, p);
+    	writeFile(f, x, y, p);
 	    print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
 	    print("Optimum z-position (mm) from peak:", opt_peakz);
     }
@@ -62,17 +86,18 @@ macro "stack_fit_edge"{
 }
 
 // Seperate plotting routine for 2nd order fitting
-function plot2d(x, val) {
+function plot2d(x, val){
 	Fit.doFit(1, x, val);
  	Fit.plot();
  	a = Fit.p(0);
 	b = Fit.p(1);
 	c = Fit.p(2);	
 	opt = -b/(2*c);
+	// return the critical point
 	return opt;
 }
 // Seperate write to file routine
-function write(f, x, y, p) {
+function writeFile(f, x, y, p){
     xx = "";
     yy = "";
     pp = "";
@@ -88,3 +113,4 @@ function write(f, x, y, p) {
 	}
 	close();
 }
+
