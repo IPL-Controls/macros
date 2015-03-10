@@ -35,31 +35,40 @@ macro "stack_fit_edge"{
     	y = newArray(nSlices);
     	x = newArray(nSlices);
     	p = newArray(nSlices);
+    	// put all plots in their seperate respective stacks
     	mtf_stack = 0;
- //   	setBatchMode(true);
- 		print (nSlices);
+    	lsf_stack = 0;
     	for (i=1; i<=nSlices; i++){
-    //		selectImage(imgname);
     		setSlice(i);
     		d = runMacro("single_fit_edge", args);
     		selectWindow("MTF");
   	 		run("Copy");
-    		w = getWidth;
+  	 		w = getWidth;
   	 		h = getHeight;
-    		close();
-    		selectWindow("LSF");
-    		close();
-    		if (mtf_stack==0) {
+  	 		close();
+  	 		if (mtf_stack==0) {
             	newImage("MTF Plots", "8-bit", w, h, 1);
             	mtf_stack = getImageID;
-
         	} 
         	else {
             	selectImage(mtf_stack);
             	run("Add Slice");
         	}
         	run("Paste");
-  			
+	
+  	 		selectWindow("LSF");
+  	 		run("Copy");
+    		close();
+    		
+        	if (lsf_stack==0) {
+            	newImage("LSF Plots", "8-bit", w, h, 1);
+            	lsf_stack = getImageID;
+        	} 
+        	else {
+            	selectImage(lsf_stack);
+            	run("Add Slice");
+        	}
+        	run("Paste");
     		sp = split(d, " ");
     		y[i-1] = sp[0];
     		p[i-1] = sp[1];
