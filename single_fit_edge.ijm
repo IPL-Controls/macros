@@ -7,11 +7,15 @@
  *  __status__          =   "stable"
  *  __date__            =   "2/27/15"
  *  __version__         =   "1.0"
+ *  __to-do__			=	1. Get mtf to work right
+ *  						2. Format code/comments etc.
  */
-
+requires("1.49i");
 macro "single_fit_edge"{
+	// get input argument if any (currently provided by stack_fit_edge)
 	args = getArgument();
 	if (args == ""){
+		// Display dialog if fit and edge choice are not already pre-defined.
 		fit_choice = newArray("Gaussian", "Lorentzian");
     	edge_choice = newArray("Horizontal", "Vertical");
   		Dialog.create("Menu");
@@ -27,19 +31,19 @@ macro "single_fit_edge"{
     	fit_func = arr[1];
 	}
 	imgname = getTitle(); 
+	// Remove scaling
 	run("Set Scale...", "distance=0 global");
     roiname = Roi.getName;    
     // Plot ESF profile, get values and close profile
-	if (lsf_edge == "Vertical") {
+	if (lsf_edge == "Vertical"){
 		setKeyDown("ctrl");
 	}
-	else {
+	else{
     	setKeyDown("alt"); 
 	}
 	run("Plot Profile");
 	Plot.getValues(x, y);
     close();
-    
     // Get derivative (raw LSF) (y[i+1]-y[i-1])/2;    
     npts = x.length;
     deriv = newArray(npts);
@@ -56,12 +60,22 @@ macro "single_fit_edge"{
     deriv1 = (deriv[npts-2]+deriv[npts-3]+deriv[npts-4]+deriv[npts-5])/4;
     slope = (deriv1-deriv0)/(x1-x0);
     offset = (deriv0*x1-deriv1*x0)/(x1-x0);
+    // Following is baseline corrected LSF
     for(i=1; i<npts-1; i++){
     	deriv[i] = deriv[i]-offset-slope*x[i];
     }
-    for(i = 1; i<npts-1; i++){
+    for(i=1; i<npts-1; i++){
     	derivneg[i] = -deriv[i];
     }
+    // Now for mtf
+    windowType="None"; //None, Hamming, Hann or Flattop
+    mtf_arr = Array.fourier(deriv);
+  	f = newArray(lengthOf(mtf_arr));
+  	for (i=0; i<lengthOf(mtf_arr); i++){
+   		 f[i] = i;
+  	}
+  	Plot.create("MTF", "frequency bin", "MTF", f, mtf_arr);
+  	Plot.show();
     // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
     Fit.doFit("Gaussian", x, deriv);
     rsqpos=Fit.rSquared();   
@@ -72,26 +86,26 @@ macro "single_fit_edge"{
     	mean_g = Fit.p(2);
     	peak_g = Fit.p(1)-Fit.p(0);
     	width_g = Fit.p(3);
+    	// LSF fwhm
     	FWHM_g = 2*sqrt(2*log(2))*width_g;
+    	// This is the contrast in terms of ESF step height 
     	area_g = sqrt(2*PI)*peak_g*width_g;
     }
-	else {
+	else{
     	Fit.doFit("Gaussian", x, derivneg);
     	mean_g = Fit.p(2);
     	peak_g = Fit.p(1)-Fit.p(0);
     	width_g = Fit.p(3);
     	FWHM_g = 2*sqrt(2*log(2))*width_g;
     	area_g = sqrt(2*PI)*peak_g*width_g;
-    }    
-        
-    if (fit_func == "Gaussian") {
+    }           
+    if (fit_func == "Gaussian"){
     	Fit.plot();
     	FWHM = FWHM_g;
-    	PEAK = abs(peak_g);
     	AREA = abs(area_g);
-    	rename(roiname+" "+imgname);
+    	rename("LSF");
 	}
-	if (fit_func == "Lorentzian") {
+	if (fit_func == "Lorentzian"){
 	// Define the Lorentzian fit function to use
 		/* a = Amplitude
 		 * b = mean 
@@ -111,16 +125,17 @@ macro "single_fit_edge"{
     	Fit.doFit(Lorentzian, x, derivneg, initialGuesses);
     	}    
     	Fit.plot();
-    	rename(roiname+" "+imgname);
+    	rename("LSF");
     	peak_l = Fit.p(0);
     	mean_l = Fit.p(1);
     	FWHM_l = Fit.p(2);
     	FWHM = abs(FWHM_l);
-    	AREA = abs(peak_l*);
+    	// This needs to be changed.
+    	AREA = abs(peak_l);
 	}
 	print(fit_func + " " + lsf_edge + " Edge FWHM"+":", FWHM);
 	outstr = toString(FWHM, 4);
 	outstr_1 = toString(AREA, 4);
 	// Return fwhm and peak
-	return outstr + " " + outstr_1;
+	return outstr+" "+outstr_1;
 }
