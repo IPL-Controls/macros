@@ -5,9 +5,10 @@
  * __version__		=	'1.0'
  * __status__   	=   "stable"
  * __date__			=	03/04/2015
- * __to-do__		=	1. find better way to get contrast (ESF step height)
+ * __to-do__		=	
  * __update-log__	=	3/09/2015: LSF and MTF plots are stacked and shown instead of closing them
- * 						3/10/2015: some code clean-up. Scan settings are now read using epics plugin
+ * 						3/10/2015: some code clean-up. 
+ * 						3/11/2015: Scan settings are now read using epics plugin
  */
 macro "stack_fit_edge" {
 	fit_choice = newArray("Gaussian", "Lorentzian");
@@ -23,10 +24,12 @@ macro "stack_fit_edge" {
 	imgname = getTitle(); 
     dir = getDirectory("image");
     if (imgname == "Stack"){
+    	run("EPICSIJ ");
     	Dialog.create("Scan Settings");
 		Dialog.addMessage("Update Scan settings:")
-		Dialog.addNumber("start:", 0);
-		Dialog.addNumber("end:", 0);
+		// Use EPICS IJ plugin to read scan1 settings.
+		Dialog.addNumber("start:", Ext.read("ampstep:scan1.P1SP"));
+		Dialog.addNumber("end:", Ext.read("ampstep:scan1.P1EP"));
 		Dialog.show();
 		start = parseFloat(Dialog.getNumber());
 		end = parseFloat(Dialog.getNumber());
