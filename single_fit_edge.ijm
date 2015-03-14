@@ -10,6 +10,7 @@
  *  __to-do__			=	1. Get mtf normalization to work 
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
+ *  						3/13/15: prints contrast count as well.
  */
 requires("1.49i");
 macro "single_fit_edge" {
@@ -155,7 +156,9 @@ macro "single_fit_edge" {
     	FWHM = abs(FWHM_l);
     	AREA = abs(area_l);
 	}
-	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM);
+	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
+	print("Contrast" + ":", AREA + " DN");
+	print("---------------------------------------------------------");
 	outstr = toString(FWHM, 4);
 	outstr_1 = toString(AREA, 4);
 	// Return fwhm and area under lsf (edge step height)
