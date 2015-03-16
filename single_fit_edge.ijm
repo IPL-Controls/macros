@@ -10,10 +10,11 @@
  *  __to-do__			=	1. Get mtf normalization to work 
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
+ *  						3/13/15: prints contrast count as well.
  */
 requires("1.49i");
 macro "single_fit_edge" {
-	// get input argument if any (currently provided by stack_fit_edge)
+	// get input argument if any (currently provided by Find_Edge_Resolution)
 	args = getArgument();
 	if (args == "") {
 		// Display dialog if fit and edge choice are not already pre-defined.
@@ -30,6 +31,7 @@ macro "single_fit_edge" {
     	pix_size = parseFloat(Dialog.getNumber());
 	}
 	else {
+		// use this setting for Find_Edge_Resolution.ijm
 		arr = split(args, " ");
 		lsf_edge = arr[0];
     	fit_func = arr[1];
@@ -53,6 +55,7 @@ macro "single_fit_edge" {
     npts = x.length;
     deriv = newArray(npts);
     derivneg = newArray(npts);
+    // force tails of LSF to go to 0 for finite roi
     deriv[0] = 0;
     deriv[npts-1] = 0;
     for(i = 1; i < npts - 1; i++) {
@@ -74,6 +77,8 @@ macro "single_fit_edge" {
     }
     // Now for mtf
     windowType = "None"; // None, Hamming, Hann or Flattop
+    // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
+    // and the LSF is real-valued.
     mtf_arr = Array.fourier(deriv);
     mtf_norm = newArray(mtf_arr.length);
     mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
@@ -155,7 +160,9 @@ macro "single_fit_edge" {
     	FWHM = abs(FWHM_l);
     	AREA = abs(area_l);
 	}
-	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM);
+	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
+	print("Contrast" + ":", AREA + " DN");
+	print("---------------------------------------------------------");
 	outstr = toString(FWHM, 4);
 	outstr_1 = toString(AREA, 4);
 	// Return fwhm and area under lsf (edge step height)

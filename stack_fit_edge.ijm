@@ -1,15 +1,19 @@
 /*
- * Generic extension of single_fit_edge to work for a stack of images.
+ * Generic extension of single_fit_edge to work for a single image or a stack of images.
  * 
  * __author_		=	'Alireza Panna'
  * __version__		=	'1.0'
  * __status__   	=   "stable"
  * __date__			=	03/04/2015
- * __to-do__		=	
+ * __to-do__		=	1. Change the fit order to third for better fitting.
  * __update-log__	=	3/09/2015: LSF and MTF plots are stacked and shown instead of closing them
  * 						3/10/2015: some code clean-up. 
  * 						3/11/2015: Scan settings are now read using epics plugin
+ * 						3/13/2015: Scan step is also read from epics plugin, global variable for scan IOC
  */
+ 
+// Global scan ioc pv name 
+var SCAN_IOC = "ampstep:scan1";
 macro "stack_fit_edge" {
 	fit_choice = newArray("Gaussian", "Lorentzian");
     edge_choice = newArray("Horizontal", "Vertical");
@@ -28,12 +32,16 @@ macro "stack_fit_edge" {
     	Dialog.create("Scan Settings");
 		Dialog.addMessage("Update Scan settings:")
 		// Use EPICS IJ plugin to read scan1 settings.
-		Dialog.addNumber("start:", Ext.read("ampstep:scan1.P1SP"));
-		Dialog.addNumber("end:", Ext.read("ampstep:scan1.P1EP"));
+		Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
+		Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
+		Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
 		Dialog.show();
 		start = parseFloat(Dialog.getNumber());
 		end = parseFloat(Dialog.getNumber());
-    	step = abs((end - start)/(nSlices - 1));
+		step = parseFloat(Dialog.getNumber());
+		if (step == 0) {
+    		step = abs((end - start)/(nSlices - 1));
+		}
     	
     	y = newArray(nSlices);
     	x = newArray(nSlices);
@@ -87,7 +95,7 @@ macro "stack_fit_edge" {
     	print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "z (mm)"); 
     	writeFile(f, x, y, p);
 	    print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
-	    print("Optimum z-position (mm) from peak:", opt_peakz);
+	//    print("Optimum z-position (mm) from peak:", opt_peakz);
     }
     else {
     	d = runMacro("single_fit_edge", args);
