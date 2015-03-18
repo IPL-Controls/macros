@@ -10,6 +10,7 @@
  * 						3/10/2015: some code clean-up. 
  * 						3/11/2015: Scan settings are now read using epics plugin
  * 						3/13/2015: Scan step is also read from epics plugin, global variable for scan IOC
+ * 						3/18/2015: Added conditions for generic stack of images but without any sort of scan 
  */
  
 // Global scan ioc pv name 
@@ -27,24 +28,42 @@ macro "stack_fit_edge" {
     
 	imgname = getTitle(); 
     dir = getDirectory("image");
-    if (imgname == "Stack"){
-    	run("EPICSIJ ");
-    	Dialog.create("Scan Settings");
-		Dialog.addMessage("Update Scan settings:")
-		// Use EPICS IJ plugin to read scan1 settings.
-		Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
-		Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
-		Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
-		Dialog.show();
-		start = parseFloat(Dialog.getNumber());
-		end = parseFloat(Dialog.getNumber());
-		step = parseFloat(Dialog.getNumber());
-		if (step == 0) {
-    		step = abs((end - start)/(nSlices - 1));
-		}
-    	
-    	y = newArray(nSlices);
+    if (imgname == "Stack") {
+    	Dialog.create("Is this a scan?");
+    	Dialog.addCheckbox("Yes", true);
+    	Dialog.show();
+    	is_scan = Dialog.getCheckbox();
+    	// array for scan axis
     	x = newArray(nSlices);
+    	if (is_scan == true) {
+    		run("EPICSIJ ");
+    		Dialog.create("Scan Settings");
+			Dialog.addMessage("Update Scan settings:")
+			// Use EPICS IJ plugin to read scan1 settings.
+			Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
+			Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
+			Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
+			Dialog.show();
+			start = parseFloat(Dialog.getNumber());
+			end = parseFloat(Dialog.getNumber());
+			step = parseFloat(Dialog.getNumber());
+			if (step == 0) {
+    			step = abs((end - start)/(nSlices - 1));
+			}
+			// Create the scan axis
+			temp = start;
+ 			for(i = 1; i <= x.length; i++) {	
+     	  		x[i-1] = temp;
+     	  		temp = temp + step;
+ 			}	 
+    	}
+    	else {
+    		// no scan but still a stack 
+    		for(i = 1; i <= x.length; i++) {	
+     	  		x[i-1] = "N/A";
+ 			}	 	
+    	}
+    	y = newArray(nSlices);
     	p = newArray(nSlices);
     	// put all plots in their seperate respective stacks
     	mtf_stack = 0;
@@ -82,24 +101,23 @@ macro "stack_fit_edge" {
     		y[i-1] = sp[0];
     		p[i-1] = sp[1];
     		selectImage(imgname);
-     	}
-		temp = start;
- 		for(i = 1; i <= x.length; i++) {	
-     	  	x[i-1] = temp;
-     	  	temp = temp + step;
- 		}	 
- 		opt_fwhmz = plot2d(x, y);
- 		opt_peakz = plot2d(x, p);
- 		
+     	}	
+		if (is_scan == true) {
+			// plot fwhm and peak vs. scan axis
+ 			opt_fwhmz = plot2d(x, y);
+ 			opt_peakz = plot2d(x, p);
+ 			print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
+		}
+		// write results to file
 		f = File.open(dir + "edge_widths_contrast" + ".txt");
-    	print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "z (mm)"); 
+		print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "z (mm)"); 
     	writeFile(f, x, y, p);
-	    print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
-	//    print("Optimum z-position (mm) from peak:", opt_peakz);
     }
     else {
+    	// no stack condition
     	d = runMacro("single_fit_edge", args);
-    }	
+    }
+    print("--Analysis Completed");	
 }
 // Seperate plotting routine for 2nd order fitting
 function plot2d(x, val) {
@@ -127,6 +145,6 @@ function writeFile(f, x, y, p) {
     	z++;
 	    print(f, zz);
 	}
-	close();
+	//close();
 }
 
