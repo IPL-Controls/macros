@@ -11,6 +11,7 @@
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
  *  						3/13/15: prints contrast count as well.
+ *  						3/18/15: Decided not to normalize mtf for now. (Dr. Wens suggestion)
  */
 requires("1.49i");
 macro "single_fit_edge" {
@@ -86,7 +87,8 @@ macro "single_fit_edge" {
    
   	f = newArray(lengthOf(mtf_arr));
   	for (i = 0; i < lengthOf(mtf_arr); i++) {
-  		 mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
+  		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
+  		 mtf_norm[i] = mtf_arr[i];
   		 if (pix_size != 0) {
   		 	// Sampling period
   			T = lengthOf(deriv)/(1/(pix_size * 0.001));
