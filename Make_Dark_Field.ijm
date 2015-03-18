@@ -7,7 +7,7 @@
  *  __version__         =   "1.0"
  *  __to-do__			=	1. Find a better way to get image meta-data
  *  __update-log__		=   3/13/15: First version.
-
+ *  						3/18/15: Added completed notification.
  */
 macro "Make_Dark_Field" {
 	// Get File Directory and file names
@@ -54,4 +54,5 @@ macro "Make_Dark_Field" {
 	saveAs("Tiff", dirDest + "dark" + time + bin + cam + gain + "_avrg" + toString(numTiff));
 	// Cleanup
     run("Close All");
+    print("--Completed");
 }	    
