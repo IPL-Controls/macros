@@ -5,12 +5,13 @@
  * __version__		=	'1.0'
  * __status__   	=   "stable"
  * __date__			=	03/04/2015
- * __to-do__		=	1. Change the fit order to third for better fitting.
+ * __to-do__		=
  * __update-log__	=	3/09/2015: LSF and MTF plots are stacked and shown instead of closing them
  * 						3/10/2015: some code clean-up. 
  * 						3/11/2015: Scan settings are now read using epics plugin
  * 						3/13/2015: Scan step is also read from epics plugin, global variable for scan IOC
  * 						3/18/2015: Added conditions for generic stack of images but without any sort of scan 
+ * 						3/19/2015: Changed FWHM vs. pos (mm) fit to third order.
  */
  
 // Global scan ioc pv name 
@@ -44,8 +45,8 @@ macro "stack_fit_edge" {
 			Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
 			Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
 			Dialog.show();
-			start = parseFloat(Dialog.getNumber());
-			end = parseFloat(Dialog.getNumber());
+			var start = parseFloat(Dialog.getNumber());
+			var end = parseFloat(Dialog.getNumber());
 			step = parseFloat(Dialog.getNumber());
 			if (step == 0) {
     			step = abs((end - start)/(nSlices - 1));
@@ -104,8 +105,10 @@ macro "stack_fit_edge" {
      	}	
 		if (is_scan == true) {
 			// plot fwhm and peak vs. scan axis
- 			opt_fwhmz = plot2d(x, y);
- 			opt_peakz = plot2d(x, p);
+			opt_peakz = plot3d(x, p);
+			close();
+ 			opt_fwhmz = plot3d(x, y);
+ 			
  			print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
 		}
 		// write results to file
@@ -120,13 +123,39 @@ macro "stack_fit_edge" {
     print("--Analysis Completed");	
 }
 // Seperate plotting routine for 2nd order fitting
-function plot2d(x, val) {
-	Fit.doFit(1, x, val);
+function plot3d(x, val) {
+	Fit.doFit(2, x, val);
  	Fit.plot();
  	a = Fit.p(0);
 	b = Fit.p(1);
-	c = Fit.p(2);	
-	opt = -b/(2 * c);
+	c = Fit.p(2);
+	d = Fit.p(3);	
+	// Find critical point as long as not imaginary
+	if ((4* c * c - 12 * b * d) >= 0) {
+		opt_pos = (-2 * c + 2 * sqrt(c * c - 3 * b * d))/(6 * d);
+		opt_neg = (-2 * c - 2 * sqrt(c * c - 3 * b * d))/(6 * d);
+		// Case 1
+		if (start > end) {
+			if (opt_pos <= start && opt_pos >= end) {
+				opt = opt_pos;
+			}
+			else {
+				opt = opt_neg;
+			}
+		}
+		// Case 2
+		else if (start < end) {
+			 if (opt_pos >= start && opt_pos <= end) {
+				opt = opt_pos;
+			}
+			else {
+				opt = opt_neg;
+			}
+		}
+	}
+	else {
+		opt = "NAN";
+	}	
 	// return the critical point
 	return opt;
 }
@@ -147,4 +176,3 @@ function writeFile(f, x, y, p) {
 	}
 	//close();
 }
-
