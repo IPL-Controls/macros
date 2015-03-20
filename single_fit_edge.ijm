@@ -7,11 +7,13 @@
  *  __status__          =   "stable"
  *  __date__            =   "2/27/15"
  *  __version__         =   "1.0"
- *  __to-do__			=	1. Get mtf normalization to work 
+ *  __to-do__			=	1. Get mtf normalization to work. Currently mtf is found by doing a 1D fast hartley transform. Need to 
+ *  						   think about if this is right!
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
  *  						3/13/15: prints contrast count as well.
  *  						3/18/15: Decided not to normalize mtf for now. (Dr. Wens suggestion)
+ *  						3/19/15: Added function makeFancy to make the mtf plots look nicer
  */
 requires("1.49i");
 macro "single_fit_edge" {
@@ -25,7 +27,7 @@ macro "single_fit_edge" {
 		Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
   		Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
   		// This is only used to generate MTF x-axis in cycles/mm
-  		Dialog.addNumber("Camera Pixel Size (um)", 32.5);
+  		Dialog.addNumber("Image Pixel Size (um)", 32.5);
   		Dialog.show();
   		lsf_edge = Dialog.getChoice();
     	fit_func = Dialog.getChoice();
@@ -88,7 +90,7 @@ macro "single_fit_edge" {
   	f = newArray(lengthOf(mtf_arr));
   	for (i = 0; i < lengthOf(mtf_arr); i++) {
   		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
-  		 mtf_norm[i] = mtf_arr[i];
+  		 mtf_norm[i] = deriv.length * mtf_arr[i];
   		 if (pix_size != 0) {
   		 	// Sampling period
   			T = lengthOf(deriv)/(1/(pix_size * 0.001));
@@ -100,9 +102,11 @@ macro "single_fit_edge" {
   	}
   	if (pix_size != 0) {
   		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
+  		makeFancy(f, mtf_norm);
   	}
   	else {
   		Plot.create("MTF", "frequency bin", "MTF", f, mtf_norm);
+  		makeFancy(f, mtf_norm);
   	}
   	Plot.show();
     // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
@@ -117,7 +121,7 @@ macro "single_fit_edge" {
     	width_g = Fit.p(3);
     	// LSF fwhm
     	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    	// This is the contrast in terms of ESF step height 
+    	// This is the contrast (I_max - I_min) in terms of ESF step height 
     	area_g = sqrt(2 * PI) * peak_g * width_g;
     }
 	else {
@@ -170,3 +174,20 @@ macro "single_fit_edge" {
 	// Return fwhm and area under lsf (edge step height)
 	return outstr + " " + outstr_1;
 }
+// Makes the plots looks fancier
+function makeFancy(x_val, y_val) {
+        Plot.setLineWidth(2);
+        Plot.setColor("red");
+        Plot.add("circles", x_val, y_val);
+        Plot.setColor("Gray");
+        Plot.add("line", x_val, y_val);
+}
+// Some notes:
+// 1. Since LSF is gaussian (real and even), the fourier transform is also real and even.
+// 2. Array.Fourier() does a 1D Fast Hartley transform H(f),which has a real kernel (cas(wx))
+// 3. Need to convert Hartley to Fourier and then take amplitude only. To do this use the
+//	  relation:
+//    F(f) = (H(f) + H(-f))/2 + i(H(f) - H(-f))/2 with H(f) = H(-f) 
+//    So F(f) = H(f) (Same as fourier for real and even signals) 
+      	
+ 
