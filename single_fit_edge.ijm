@@ -14,6 +14,7 @@
  *  						3/13/15: prints contrast count as well.
  *  						3/18/15: Decided not to normalize mtf for now. (Dr. Wens suggestion)
  *  						3/19/15: Added function makeFancy to make the mtf plots look nicer
+ *  						3/25/15: Fixed normalization issue of mtf. Raw mtf should give proper contrast values now.
  */
 requires("1.49i");
 macro "single_fit_edge" {
@@ -78,44 +79,14 @@ macro "single_fit_edge" {
     for(i = 1; i < npts - 1; i++) {
     	derivneg[i] = -deriv[i];
     }
-    // Now for mtf
-    windowType = "None"; // None, Hamming, Hann or Flattop
-    // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
-    // and the LSF is real-valued.
-    mtf_arr = Array.fourier(deriv);
-    mtf_norm = newArray(mtf_arr.length);
-    mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
-    mtf_arr_max = mtf_arr_stat[1];
-   
-  	f = newArray(lengthOf(mtf_arr));
-  	for (i = 0; i < lengthOf(mtf_arr); i++) {
-  		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
-  		 mtf_norm[i] = deriv.length * mtf_arr[i];
-  		 if (pix_size != 0) {
-  		 	// Sampling period
-  			T = lengthOf(deriv)/(1/(pix_size * 0.001));
-   		 	f[i] = i/T;
-  		 }
-  		 else {
-  		 	f[i] = i;
-  		 }
-  	}
-  	if (pix_size != 0) {
-  		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
-  		makeFancy(f, mtf_norm);
-  	}
-  	else {
-  		Plot.create("MTF", "frequency bin", "MTF", f, mtf_norm);
-  		makeFancy(f, mtf_norm);
-  	}
-  	Plot.show();
     // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
-    Fit.doFit("Gaussian", x, deriv);
+    deriv_gauss_fit = Fit.doFit("Gaussian", x, deriv);
     rsqpos = Fit.rSquared();   
     Fit.doFit("Gaussian", x, derivneg);
     rsqneg = Fit.rSquared();
     if(rsqpos > rsqneg) {
     	Fit.doFit("Gaussian", x, deriv);
+    	off_g = Fit.p(0);
     	mean_g = Fit.p(2);
     	peak_g = Fit.p(1) - Fit.p(0);
     	width_g = Fit.p(3);
@@ -126,6 +97,7 @@ macro "single_fit_edge" {
     }
 	else {
     	Fit.doFit("Gaussian", x, derivneg);
+    	off_g = Fit.p(0);
     	mean_g = Fit.p(2);
     	peak_g = Fit.p(1) - Fit.p(0);
     	width_g = Fit.p(3);
@@ -166,6 +138,46 @@ macro "single_fit_edge" {
     	FWHM = abs(FWHM_l);
     	AREA = abs(area_l);
 	}
+	// Now for mtf
+    windowType = "None"; // None, Hamming, Hann or Flattop
+    // create the function from the fit estimates:
+    len = 128;
+  	windowType="None";  //None, Hamming, Hann or Flattop
+  	x_mtf = newArray(len);
+  	a_mtf = newArray(len);
+  for (i=0; i<len; i++) {
+    x_mtf[i] = i;
+    a_mtf[i] = off_g + (peak_g ) * exp(-(i - mean_g) * (i - mean_g)/(2 * width_g * width_g));
+  }
+    // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
+    // and the LSF is real-valued.
+    mtf_arr = Array.fourier(a_mtf, windowType);
+    mtf_norm = newArray(mtf_arr.length);
+    mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
+    mtf_arr_max = mtf_arr_stat[1];
+  	f = newArray(lengthOf(mtf_arr));
+  	for (i = 0; i < lengthOf(mtf_arr); i++) {
+  		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
+  		 mtf_norm[i] =  len * mtf_arr[i]/(sqrt(2));
+  		 if (pix_size != 0) {
+  		 	// Sampling period
+  			T = len/(1/(pix_size * 0.001));
+   		 	f[i] = i/T;
+  		 }
+  		 else {
+  		 	f[i] = i;
+  		 }
+  	}
+  	if (pix_size != 0) {
+  		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
+  		makeFancy(f, mtf_norm);
+  	}
+  	else {
+  		Plot.create("MTF", "frequency bin", "MTF", f, mtf_norm);
+  		makeFancy(f, mtf_norm);
+  	}
+  	Plot.show();
+	
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
 	print("Contrast" + ":", AREA + " DN");
 	print("---------------------------------------------------------");
