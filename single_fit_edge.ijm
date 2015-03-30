@@ -1,7 +1,8 @@
 /* 
  *  Finds MTF and LSF from edge profile and offer a choice for either Gaussian
  *  or Lorentzian fit. Return the FWHM of the LSF profile. Adapted from macro 
- *  single_edge_horizontal.ijm. Works for both horizontal and vertical edges.
+ *  single_edge_horizontal.ijm. Works for both horizontal and vertical edges. 
+ *  Works when image is open and roi is selected.
  *  
  *  __author__			=	'Alireza Panna'
  *  __status__          =   "stable"
@@ -15,10 +16,11 @@
  *  						3/18/15: Decided not to normalize mtf for now. (Dr. Wens suggestion)
  *  						3/19/15: Added function makeFancy to make the mtf plots look nicer
  *  						3/25/15: Fixed normalization issue of mtf. Raw mtf should give proper contrast values now.
+ *  						3/30/15: Added method for % roi selected in image to be printed in log
  */
 requires("1.49i");
 macro "single_fit_edge" {
-	// get input argument if any (currently provided by Find_Edge_Resolution)
+	// get input argument if any
 	args = getArgument();
 	if (args == "") {
 		// Display dialog if fit and edge choice are not already pre-defined.
@@ -44,7 +46,14 @@ macro "single_fit_edge" {
 	imgname = getTitle(); 
 	// Remove scaling
 	run("Set Scale...", "distance=0 global");
-    roiname = Roi.getName;    
+	getSelectionBounds(upper_left_x, upper_left_y, width_roi, height_roi);
+	width_image = getWidth();
+	height_image = getHeight();
+//	center_image_x = width_image/2;
+//	center_image_y = height_image/2
+	area_image = width_image * height_image;
+	area_roi = width_roi * height_roi;
+	per_sel = (area_roi/area_image) * 100;
     // Plot ESF profile, get values and close profile
 	if (lsf_edge == "Vertical") {
 		setKeyDown("ctrl");
@@ -180,6 +189,8 @@ macro "single_fit_edge" {
 	
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
 	print("Contrast" + ":", AREA + " DN");
+	print("ROI (W x H): " + toString(width_roi) + " x " + toString(height_roi) + " pixels"); 
+	print(toString(per_sel) + " % " +  "of total image selected!");
 	print("---------------------------------------------------------");
 	outstr = toString(FWHM, 4);
 	outstr_1 = toString(AREA, 4);
