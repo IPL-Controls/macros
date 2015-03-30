@@ -1,5 +1,6 @@
 /*
- * Generic extension of single_fit_edge to work for a single image or a stack of images.
+ * Generic extension of single_fit_edge to work for a single image or a stack of images. 
+ * Works when a stack of images is already open and a roi is selected.
  * 
  * __author_		=	'Alireza Panna'
  * __version__		=	'1.0'
@@ -15,7 +16,7 @@
  */
  
 // Global scan ioc pv name 
-var SCAN_IOC = "ampstep:scan1";
+var SCAN_IOC = "IPL:SCAN-1:scan1";
 macro "stack_fit_edge" {
 	fit_choice = newArray("Gaussian", "Lorentzian");
     edge_choice = newArray("Horizontal", "Vertical");
@@ -30,20 +31,23 @@ macro "stack_fit_edge" {
 	imgname = getTitle(); 
     dir = getDirectory("image");
     if (imgname == "Stack") {
-    	Dialog.create("Is this a scan?");
+    	Dialog.create("SCAN?");
     	Dialog.addCheckbox("Yes", true);
     	Dialog.show();
     	is_scan = Dialog.getCheckbox();
     	// array for scan axis
     	x = newArray(nSlices);
     	if (is_scan == true) {
-    		run("EPICSIJ ");
+ //   		run("EPICSIJ ");
     		Dialog.create("Scan Settings");
 			Dialog.addMessage("Update Scan settings:")
 			// Use EPICS IJ plugin to read scan1 settings.
-			Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
-			Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
-			Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
+//			Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
+//			Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
+//			Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
+			Dialog.addNumber("start:", 0);
+			Dialog.addNumber("end:", 0);
+			Dialog.addNumber("step:", 0);
 			Dialog.show();
 			var start = parseFloat(Dialog.getNumber());
 			var end = parseFloat(Dialog.getNumber());
