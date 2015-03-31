@@ -8,8 +8,8 @@
  *  __status__          =   "stable"
  *  __date__            =   "2/27/15"
  *  __version__         =   "1.0"
- *  __to-do__			=	1. Get mtf normalization to work. Currently mtf is found by doing a 1D fast hartley transform. Need to 
- *  						   think about if this is right!
+ *  __to-do__			=	1. There is an issue with the zero-frequency value of the MTF (at least I think its an issue)  
+ *  						   
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
  *  						3/13/15: prints contrast count as well.
@@ -17,6 +17,7 @@
  *  						3/19/15: Added function makeFancy to make the mtf plots look nicer
  *  						3/25/15: Fixed normalization issue of mtf. Raw mtf should give proper contrast values now.
  *  						3/30/15: Added method for % roi selected in image to be printed in log
+ *  						3/31/15: MTF is normalized now. 
  */
 requires("1.49i");
 macro "single_fit_edge" {
@@ -154,27 +155,28 @@ macro "single_fit_edge" {
   	windowType="None";  //None, Hamming, Hann or Flattop
   	x_mtf = newArray(len);
   	a_mtf = newArray(len);
-  for (i=0; i<len; i++) {
+  for (i = 0; i < len; i++) {
     x_mtf[i] = i;
-    a_mtf[i] = off_g + (peak_g ) * exp(-(i - mean_g) * (i - mean_g)/(2 * width_g * width_g));
+    a_mtf[i] = off_g + (peak_g ) * exp(-(i- mean_g) * (i - mean_g)/(2 * width_g * width_g));
   }
     // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
     // and the LSF is real-valued.
     mtf_arr = Array.fourier(a_mtf, windowType);
     mtf_norm = newArray(mtf_arr.length);
     mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
-    mtf_arr_max = mtf_arr_stat[1];
+    mtf_arr_max = mtf_arr_stat[1]/sqrt(2);
+    
   	f = newArray(lengthOf(mtf_arr));
   	for (i = 0; i < lengthOf(mtf_arr); i++) {
   		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
-  		 mtf_norm[i] =  len * mtf_arr[i]/(sqrt(2));
+  		 mtf_norm[i] =  (len * mtf_arr[i]/(sqrt(2)))/(len * mtf_arr_max);
   		 if (pix_size != 0) {
   		 	// Sampling period
-  			T = len/(1/(pix_size * 0.001));
+  			T = len/(1/(pix_size * 0.001)); //T=len/w
    		 	f[i] = i/T;
   		 }
   		 else {
-  		 	f[i] = i;
+  		 	f[i] = i/len;
   		 }
   	}
   	if (pix_size != 0) {
