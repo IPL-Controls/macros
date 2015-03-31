@@ -13,6 +13,7 @@
  * 						3/13/2015: Scan step is also read from epics plugin, global variable for scan IOC
  * 						3/18/2015: Added conditions for generic stack of images but without any sort of scan 
  * 						3/19/2015: Changed FWHM vs. pos (mm) fit to third order.
+ * 						3/31/2015: start and stop are not global variables anymore.
  */
  
 // Global scan ioc pv name 
@@ -49,8 +50,8 @@ macro "stack_fit_edge" {
 			Dialog.addNumber("end:", 0);
 			Dialog.addNumber("step:", 0);
 			Dialog.show();
-			var start = parseFloat(Dialog.getNumber());
-			var end = parseFloat(Dialog.getNumber());
+			start = parseFloat(Dialog.getNumber());
+			end = parseFloat(Dialog.getNumber());
 			step = parseFloat(Dialog.getNumber());
 			if (step == 0) {
     			step = abs((end - start)/(nSlices - 1));
