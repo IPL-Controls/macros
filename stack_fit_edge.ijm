@@ -31,7 +31,7 @@ macro "stack_fit_edge" {
     
 	imgname = getTitle(); 
     dir = getDirectory("image");
-    if (imgname == "Stack") {
+    if (imgname == "Stack" || nSlices > 1) {
     	Dialog.create("SCAN?");
     	Dialog.addCheckbox("Yes", true);
     	Dialog.show();
