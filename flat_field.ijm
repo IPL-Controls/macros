@@ -3,10 +3,10 @@
 // AP
 // 12/17/2014
 
-runMacro("dark_field");
+
 macro "flat_field"{
+	dark_noise_mean = runMacro("dark_field");
 	//Get File Directories and file names
-	
 	dirFlat_0 = getDirectory("Select Flat-field-0 Directory");
 	flat_0 = getFileList(dirFlat_0);
 	
@@ -16,7 +16,7 @@ macro "flat_field"{
 	dirdarkSum = getDirectory("Select Dark-sum-Output Directory");
 	dark_sum = getFileList(dirdarkSum);
 
-	dirDest = getDirectory("Select data output Directory");
+	dirDest = getDirectory("Select Output Directory");
 	File.makeDirectory(dirDest);
 	
 	numTiff = 0;
@@ -139,7 +139,16 @@ macro "flat_field"{
 		close();
 	}
 	selectWindow("Results");
-	saveAs("Measurements", dirDest + "flat_noise.csv");
+	row = "flat-field noise (DN)";
+	flat_stddev = newArray(nResults);
+	pho_shot_noise = newArray(nResults);
+	for (i=0; i<nResults; i++) 
+	{ 
+		flat_stddev[i] = getResult("StdDev", i)/sqrt(2);
+		pho_shot_noise[i] = sqrt(flat_stddev[i] * flat_stddev[i] - dark_noise_mean * dark_noise_mean);
+    	row =  row + ',' + flat_stddev[i]; 
+  	} 
+  	File.append(row, dirDest + "darkflat_noise.csv"); 
 	run("Clear Results");
 	run("Set Measurements...", "  mean redirect=None decimal=6");
 	for (tiffc=0; tiffc<numTiff; tiffc++){
@@ -153,8 +162,22 @@ macro "flat_field"{
 		getStatistics(mean);
 		close();
 	}
-	selectWindow("Results");
-	saveAs("Measurements", dirDest + "flat_corr_mean.csv");
+	selectWindow("Results");	
+	row = "FPN corrected  mean flat signal (DN)";
+	flat_mean = newArray(nResults);
+	for (i=0; i<nResults; i++) 
+	{ 
+		flat_mean[i] = getResult("Mean", i);
+    	row = row +  "," + flat_mean[i]; 
+  	} 
+    File.append(row, dirDest + "darkflat_noise.csv"); 
+
+    row = "Photon Shot Noise (DN)";
+	for (i=0; i<nResults; i++) 
+	{ 
+    	row = row +  "," + pho_shot_noise[i]; 
+  	} 
+    File.append(row, dirDest + "darkflat_noise.csv");
 	// Clean-up
     run("Close All");
 	print(" - Completed");
