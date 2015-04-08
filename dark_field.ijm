@@ -19,50 +19,48 @@ macro "dark_field"{
 	
 	setBatchMode(true);
 	for (tiffc=0; tiffc<numTiff; tiffc++){
-		if (startsWith(fileList[tiffc],  "dark")){
-			open(fileList[tiffc]);
-			if(fileList[tiffc] == "dark_0.tif"){
-				saveAs("Tiff", dirSrc+"dark_00.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_1.tif"){
-				saveAs("Tiff", dirSrc+"dark_01.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_2.tif"){
-				saveAs("Tiff", dirSrc+"dark_02.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_3.tif"){
-				saveAs("Tiff", dirSrc+"dark_03.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_4.tif") {
-				saveAs("Tiff", dirSrc+"dark_04.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_5.tif"){
-				saveAs("Tiff", dirSrc+"dark_05.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_6.tif"){
-				saveAs("Tiff", dirSrc+"dark_06.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_7.tif"){
-				saveAs("Tiff", dirSrc+"dark_07.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_8.tif"){
-				saveAs("Tiff", dirSrc+"dark_08.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			if(fileList[tiffc] == "dark_9.tif"){
-				saveAs("Tiff", dirSrc+"dark_09.tif");
-				File.delete(dirSrc+fileList[tiffc]);
-			}
-			close();
+		open(fileList[tiffc]);
+		if(fileList[tiffc] == "dark_0.tif"){
+			saveAs("Tiff", dirSrc+"dark_00.tif");
+			File.delete(dirSrc+fileList[tiffc]);
 		}
+		if(fileList[tiffc] == "dark_1.tif"){
+			saveAs("Tiff", dirSrc+"dark_01.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_2.tif"){
+			saveAs("Tiff", dirSrc+"dark_02.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_3.tif"){
+			saveAs("Tiff", dirSrc+"dark_03.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_4.tif") {
+			saveAs("Tiff", dirSrc+"dark_04.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_5.tif"){
+			saveAs("Tiff", dirSrc+"dark_05.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_6.tif"){
+			saveAs("Tiff", dirSrc+"dark_06.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_7.tif"){
+			saveAs("Tiff", dirSrc+"dark_07.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_8.tif"){
+			saveAs("Tiff", dirSrc+"dark_08.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		if(fileList[tiffc] == "dark_9.tif"){
+			saveAs("Tiff", dirSrc+"dark_09.tif");
+			File.delete(dirSrc+fileList[tiffc]);
+		}
+		close();
 	}
 	fileList = getFileList(dirSrc);
 	for (tiffc=0; tiffc<numTiff; tiffc++){
@@ -83,8 +81,15 @@ macro "dark_field"{
 		tiffc+=2;
 		close();
 	} 
-	selectWindow("Results");
-	saveAs("Measurements", dirDest + "dark_noise.csv");
+	selectWindow("Results");'
+	dark_stddev = newArray(nResults);
+	row = "dark-field noise (DN)";
+	for (i=0; i<nResults; i++) 
+	{ 	dark_stddev[i] = getResult("StdDev", i)/sqrt(2);
+     	row = row + ',' + dark_stddev[i]; 
+  	} 
+  	dark_stddev_stat = Array.getStatistics(dark_stddev, min, max, mean, stdDev);
+  	File.append(row, dirDest + "darkflat_noise.csv"); 
 	run("Images to Stack", "name=Stack title=[] use");
 	run("Z Project...", "projection=[Sum Slices]");
 	run("Divide...", "value="+numTiff);
@@ -92,5 +97,7 @@ macro "dark_field"{
 	//Cleanup
 	run("Clear Results");
     run("Close All");
+    return toString(dark_stddev_stat[2]);
+
 }	    
 
