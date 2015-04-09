@@ -16,7 +16,6 @@ macro "dark_field"{
         	numTiff++;
     	}
 	}
-	
 	setBatchMode(true);
 	for (tiffc=0; tiffc<numTiff; tiffc++){
 		open(fileList[tiffc]);
@@ -71,7 +70,7 @@ macro "dark_field"{
 	//remove scale
 	run("Set Scale...", "distance=0 known=0 pixel=1 unit=pixel");
 	tiffc = 0;
-	dirDest = getDirectory("Select Dark-Sum Output Directory");
+	dirDest = getDirectory("Select Output Directory");
 	File.makeDirectory(dirDest);
 	run("Set Measurements...", "  standard redirect=None decimal=6");
 	for (i=0; i<numTiff/2; i++){
@@ -97,7 +96,7 @@ macro "dark_field"{
 	//Cleanup
 	run("Clear Results");
     run("Close All");
-    return toString(dark_stddev_stat[2]);
+    return toString(dark_stddev_stat[2] + " " + dirDest);
 
 }	    
 
