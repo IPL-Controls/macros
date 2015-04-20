@@ -38,7 +38,7 @@ macro "single_fit_edge" {
     	pix_size = parseFloat(Dialog.getNumber());
 	}
 	else {
-		// use this setting for Find_Edge_Resolution.ijm
+		// use this setting for stack_fit_edge.ijm
 		arr = split(args, " ");
 		lsf_edge = arr[0];
     	fit_func = arr[1];
@@ -50,8 +50,6 @@ macro "single_fit_edge" {
 	getSelectionBounds(upper_left_x, upper_left_y, width_roi, height_roi);
 	width_image = getWidth();
 	height_image = getHeight();
-//	center_image_x = width_image/2;
-//	center_image_y = height_image/2
 	area_image = width_image * height_image;
 	area_roi = width_roi * height_roi;
 	per_sel = (area_roi/area_image) * 100;
@@ -111,7 +109,9 @@ macro "single_fit_edge" {
     	mean_g = Fit.p(2);
     	peak_g = Fit.p(1) - Fit.p(0);
     	width_g = Fit.p(3);
+    	// LSF fwhm
     	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
+    	// This is the contrast (I_max - I_min) in terms of ESF step height 
     	area_g = sqrt(2 * PI) * peak_g * width_g;
     }           
     if (fit_func == "Gaussian") {
@@ -137,7 +137,7 @@ macro "single_fit_edge" {
     		Fit.doFit(Lorentzian, x, deriv, initialGuesses);
     	} 
     	else {
-    	Fit.doFit(Lorentzian, x, derivneg, initialGuesses);
+    		Fit.doFit(Lorentzian, x, derivneg, initialGuesses);
     	}    
     	Fit.plot();
     	rename("LSF");
@@ -150,29 +150,31 @@ macro "single_fit_edge" {
 	}
 	// Now for mtf
     windowType = "None"; // None, Hamming, Hann or Flattop
-    // create the function from the fit estimates:
-    len = 128;
+    len = deriv.length;
   	windowType="None";  //None, Hamming, Hann or Flattop
   	x_mtf = newArray(len);
   	a_mtf = newArray(len);
   for (i = 0; i < len; i++) {
     x_mtf[i] = i;
-    a_mtf[i] = off_g + (peak_g ) * exp(-(i- mean_g) * (i - mean_g)/(2 * width_g * width_g));
   }
     // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
     // and the LSF is real-valued.
-    mtf_arr = Array.fourier(a_mtf, windowType);
+    mtf_arr = Array.fourier(deriv, windowType);
     mtf_norm = newArray(mtf_arr.length);
     mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
-    mtf_arr_max = mtf_arr_stat[1]/sqrt(2);
-    
+    mtf_arr_max = mtf_arr_stat[1];
+    print (mtf_arr_stat[2]);
   	f = newArray(lengthOf(mtf_arr));
   	for (i = 0; i < lengthOf(mtf_arr); i++) {
-  		// mtf_norm[i] = mtf_arr[i]/mtf_arr_max;
-  		 mtf_norm[i] =  (len * mtf_arr[i]/(sqrt(2)))/(len * mtf_arr_max);
+  		 if (i == 0) {
+  		 	 mtf_norm[i] = (mtf_arr[i] * sqrt(2));
+  		 }
+  		 else {
+  		 	mtf_norm[i] = (mtf_arr[i]);
+  		 }
   		 if (pix_size != 0) {
   		 	// Sampling period
-  			T = len/(1/(pix_size * 0.001)); //T=len/w
+  			T = len/(1/(pix_size * 0.001)); // T=len/w
    		 	f[i] = i/T;
   		 }
   		 else {
