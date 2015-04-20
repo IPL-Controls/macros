@@ -5,9 +5,10 @@
  *  __status__          =   "stable"
  *  __date__            =   "03/01/15"
  *  __version__         =   "1.0"
- *  __to-do__			=	1. 
+ *  __to-do__			=	 
  *  __update-log__		= 	3/12/15: code clean-up
  *  						3/14/15: added functionality to remember last crop setting
+ *  						4/18/15: Fixed off by one issue in crop
  */
  
 macro "crop_images" {
@@ -133,9 +134,8 @@ macro "crop_images" {
 	}
 }
 function runCrop (ulx, uly, lrx, lry) {
-	makeRectangle(ulx, uly, lrx - ulx, lry - uly); 
+	makeRectangle(ulx, uly, lrx - ulx + 1, lry - uly + 1); 
 	run("Crop");
-	
 }
 
 
