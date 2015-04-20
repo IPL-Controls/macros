@@ -14,6 +14,7 @@
  * 						3/18/2015: Added conditions for generic stack of images but without any sort of scan 
  * 						3/19/2015: Changed FWHM vs. pos (mm) fit to third order.
  * 						3/31/2015: start and stop are not global variables anymore.
+ * 						4/18/2015: Changed user dialog display so that only one dialog shows.
  */
  
 // Global scan ioc pv name 
@@ -21,34 +22,40 @@ var SCAN_IOC = "IPL:SCAN-1:scan1";
 macro "stack_fit_edge" {
 	fit_choice = newArray("Gaussian", "Lorentzian");
     edge_choice = newArray("Horizontal", "Vertical");
+    scan_choice = newArray("Yes", "No");
+    epics_choice = newArray("Yes", "No");
     Dialog.create("Menu");
 	Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
     Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
+    Dialog.addChoice("Is this a Scan?", scan_choice, "Yes");
+    Dialog.addChoice("Use EPICSIJ?", epics_choice, "No");
     Dialog.show();
     lsf_edge = Dialog.getChoice();
     fit_func = Dialog.getChoice();
+    is_scan = Dialog.getChoice();
+    is_epics = Dialog.getChoice();
     args = lsf_edge + " " + fit_func;
     
 	imgname = getTitle(); 
     dir = getDirectory("image");
-    if (imgname == "Stack" || nSlices > 1) {
-    	Dialog.create("SCAN?");
-    	Dialog.addCheckbox("Yes", true);
-    	Dialog.show();
-    	is_scan = Dialog.getCheckbox();
+    if (imgname == "Stack" || nSlices > 1) {    	
     	// array for scan axis
     	x = newArray(nSlices);
-    	if (is_scan == true) {
- //   		run("EPICSIJ ");
+    	if (is_scan == "Yes") {
     		Dialog.create("Scan Settings");
 			Dialog.addMessage("Update Scan settings:")
+			if (is_epics == "Yes") {
 			// Use EPICS IJ plugin to read scan1 settings.
-//			Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
-//			Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
-//			Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
-			Dialog.addNumber("start:", 0);
-			Dialog.addNumber("end:", 0);
-			Dialog.addNumber("step:", 0);
+				run("EPICSIJ ");
+				Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
+				Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
+				Dialog.addNumber("step:", Ext.read(SCAN_IOC + ".P1SI"));
+			}
+			else {
+				Dialog.addNumber("start:", 0);
+				Dialog.addNumber("end:", 0);
+				Dialog.addNumber("step:", 0);
+			}
 			Dialog.show();
 			start = parseFloat(Dialog.getNumber());
 			end = parseFloat(Dialog.getNumber());
@@ -108,8 +115,8 @@ macro "stack_fit_edge" {
     		p[i-1] = sp[1];
     		selectImage(imgname);
      	}	
-		if (is_scan == true) {
-			// plot fwhm and peak vs. scan axis
+		if (is_scan == "Yes") {
+			// plot fwhm and contrast vs. scan axis
 			opt_peakz = plot3d(x, p);
 			close();
  			opt_fwhmz = plot3d(x, y);
@@ -179,5 +186,4 @@ function writeFile(f, x, y, p) {
     	z++;
 	    print(f, zz);
 	}
-	//close();
 }
