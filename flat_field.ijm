@@ -218,7 +218,7 @@ macro "flat_field"{
 
 	// Clean-up
 	run("Clear Results");
-	IJ.run("Close All", "");
+	run("Close All", "");
 	Fit.plot();
 	print(" - Completed");
 }
