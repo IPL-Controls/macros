@@ -21,7 +21,12 @@
  */
 requires("1.49i");
 macro "single_fit_edge" {
-	// get input argument if any
+
+	imgname = getTitle(); 
+	// remove .tif
+	imgname_split = split(imgname,".");
+    dir = getDirectory("image");
+    // get input argument if any
 	args = getArgument();
 	if (args == "") {
 		// Display dialog if fit and edge choice are not already pre-defined.
@@ -38,15 +43,18 @@ macro "single_fit_edge" {
     	pix_size = parseFloat(Dialog.getNumber());
 	}
 	else {
-		// use this setting for stack_fit_edge.ijm
+		// use the setting from stack_fit_edge.ijm
 		arr = split(args, " ");
 		lsf_edge = arr[0];
     	fit_func = arr[1];
-    	pix_size = 0;
+    	sine_angle = arr[2];
+    	pix_size  = arr[3];
+    	mtf_norm_choice = arr[4];
 	}
 	imgname = getTitle(); 
 	// Remove scaling
 	run("Set Scale...", "distance=0 global");
+	// Find percent roi selected
 	getSelectionBounds(upper_left_x, upper_left_y, width_roi, height_roi);
 	width_image = getWidth();
 	height_image = getHeight();
@@ -66,12 +74,14 @@ macro "single_fit_edge" {
     // Get derivative (raw LSF) (y[i+1]-y[i-1])/2;    
     npts = x.length;
     deriv = newArray(npts);
+    deriv_nocorr = newArray(npts);
     derivneg = newArray(npts);
     // force tails of LSF to go to 0 for finite roi
     deriv[0] = 0;
     deriv[npts-1] = 0;
     for(i = 1; i < npts - 1; i++) {
     	deriv[i] = (parseFloat(y[i+1]) - parseFloat(y[i-1]))/2;
+    	deriv_nocorr[i]  = deriv[i];
     }
 	// Linear baseline correction
     x0 = (x[1] + x[2] + x[3] + x[4])/4;
@@ -151,36 +161,59 @@ macro "single_fit_edge" {
 	// Now for mtf
     windowType = "None"; // None, Hamming, Hann or Flattop
     len = deriv.length;
-  	windowType="None";  //None, Hamming, Hann or Flattop
   	x_mtf = newArray(len);
   	a_mtf = newArray(len);
-  for (i = 0; i < len; i++) {
-    x_mtf[i] = i;
+  for (i = 0; i < len; i++) 
+  {
+       x_mtf[i] = i;
   }
     // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
     // and the LSF is real-valued.
     mtf_arr = Array.fourier(deriv, windowType);
+    
+    // perform rms correction 
+    for (i = 0; i < lengthOf(mtf_arr); i++) {
+    	// DC value i.e. peak height
+  		 if (i == 0) {
+  		 	 mtf_arr[i] = mtf_arr[i] * sqrt(2) ;
+  		 }
+  		 // rest of the harmonics
+  		 else {
+  		 	mtf_arr[i] = mtf_arr[i];
+  		 }
+    }
+    
     mtf_norm = newArray(mtf_arr.length);
+    f = newArray(lengthOf(mtf_arr));
     mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
     mtf_arr_max = mtf_arr_stat[1];
-    print (mtf_arr_stat[2]);
-  	f = newArray(lengthOf(mtf_arr));
-  	for (i = 0; i < lengthOf(mtf_arr); i++) {
-  		 if (i == 0) {
-  		 	 mtf_norm[i] = (mtf_arr[i] * sqrt(2));
-  		 }
-  		 else {
-  		 	mtf_norm[i] = (mtf_arr[i]);
-  		 }
-  		 if (pix_size != 0) {
-  		 	// Sampling period
-  			T = len/(1/(pix_size * 0.001)); // T=len/w
-   		 	f[i] = i/T;
-  		 }
-  		 else {
-  		 	f[i] = i/len;
-  		 }
-  	}
+    if (mtf_norm_choice == "Yes") {
+		for (i = 0; i < lengthOf(mtf_arr); i++) {
+			mtf_norm[i] = parseFloat(mtf_arr[i]/mtf_arr[0]);
+  			if (pix_size != 0 && sine_angle != 0) {
+  		 		// Sampling period
+     			T = parseFloat(len * pix_size * sine_angle * 0.001); // T=len/w
+   		 		f[i] = i/T;
+  		 	}
+  		 	else {
+  		 		f[i] = i/len;
+  		 	}
+  		}	
+    }
+    else {
+    	for (i = 0; i < lengthOf(mtf_arr); i++) {
+    		mtf_norm[i] = mtf_arr[i];
+  			if (pix_size != 0 && sine_angle != 0) {
+  		 		// Sampling period
+     			T = parseFloat(len * pix_size * sine_angle * 0.001); // T=len/w
+   		 		f[i] = i/T;
+  		 	}
+  		 	else {
+  		 		f[i] = i/len;
+  		 	}
+  		}	
+    }
+  	
   	if (pix_size != 0) {
   		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
   		makeFancy(f, mtf_norm);
@@ -190,6 +223,10 @@ macro "single_fit_edge" {
   		makeFancy(f, mtf_norm);
   	}
   	Plot.show();
+  	// write results to file
+	file = File.open(dir + imgname_split[0] + ".txt");
+	print(file, "frequency (cycles/mm)" + "\t" + "Raw MTF (a.u)"); 
+    writeFile(file, f, mtf_arr);
 	
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
 	print("Contrast" + ":", AREA + " DN");
@@ -200,6 +237,7 @@ macro "single_fit_edge" {
 	outstr_1 = toString(AREA, 4);
 	// Return fwhm and area under lsf (edge step height)
 	return outstr + " " + outstr_1;
+		
 }
 // Makes the plots looks fancier
 function makeFancy(x_val, y_val) {
@@ -209,7 +247,22 @@ function makeFancy(x_val, y_val) {
         Plot.setColor("Gray");
         Plot.add("line", x_val, y_val);
 }
-// Some notes:
+
+// Seperate write to file routine
+function writeFile(f, x, y) {
+    xx = "";
+    yy = "";
+    zz = "";
+    z = 0;
+    while(z < x.length) {
+    	xx = toString(x[z]) + "\t";
+    	yy = toString(y[z]) + "\n";
+    	zz = xx + yy;
+    	z++;
+	    print(f, zz);
+	}
+}
+//    notes:
 // 1. Since LSF is gaussian (real and even), the fourier transform is also real and even.
 // 2. Array.Fourier() does a 1D Fast Hartley transform H(f),which has a real kernel (cas(wx))
 // 3. Need to convert Hartley to Fourier and then take amplitude only. To do this use the
