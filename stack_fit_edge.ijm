@@ -24,6 +24,10 @@ macro "stack_fit_edge" {
     edge_choice = newArray("Horizontal", "Vertical");
     scan_choice = newArray("Yes", "No");
     epics_choice = newArray("Yes", "No");
+    mtf_norm_choice = newArray("Yes", "No");
+    sine_angle = 0;
+    pix_size = 0;
+    
     Dialog.create("Menu");
 	Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
     Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
@@ -34,10 +38,28 @@ macro "stack_fit_edge" {
     fit_func = Dialog.getChoice();
     is_scan = Dialog.getChoice();
     is_epics = Dialog.getChoice();
-    args = lsf_edge + " " + fit_func;
-    
+  
 	imgname = getTitle(); 
     dir = getDirectory("image");
+    
+    if (is_scan == "No") {
+    	Dialog.create("Add Parameters");
+    	Dialog.addNumber("Incidence Angle (deg):", 90);
+    	Dialog.addNumber("Image Pixel Size (um)", 32.5);
+    	Dialog.addChoice("Normalize MTF:", mtf_norm_choice);
+  		Dialog.show();		
+  		sine_angle = parseFloat(sin((PI/180) * parseFloat(Dialog.getNumber())));
+  		pix_size = parseFloat(Dialog.getNumber());
+  		mtf_norm_choice = Dialog.getChoice();
+    }
+    else {
+    	mtf_norm_choice = "No";
+    	sine_angle = 0.0;
+        pix_size = 0.0;
+    }
+
+    args = lsf_edge + " " + fit_func + " " + sine_angle + " " + pix_size + " " + mtf_norm_choice;
+    
     if (imgname == "Stack" || nSlices > 1) {    	
     	// array for scan axis
     	x = newArray(nSlices);
@@ -132,7 +154,6 @@ macro "stack_fit_edge" {
     	// no stack condition
     	d = runMacro("single_fit_edge", args);
     }
-    print("--Analysis Completed");	
 }
 // Seperate plotting routine for 2nd order fitting
 function plot3d(x, val) {
