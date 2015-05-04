@@ -97,12 +97,17 @@ macro "single_fit_edge" {
     for(i = 1; i < npts - 1; i++) {
     	derivneg[i] = -deriv[i];
     }
+    // write lsf results to file
+	file_lsf = File.open(dir + "LSF" + imgname_split[0] + ".txt");
+	print(file_lsf, "samples (n)" + "\t" + "Raw LSF (d(DN)/dn)"); 
+    
     // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
     deriv_gauss_fit = Fit.doFit("Gaussian", x, deriv);
     rsqpos = Fit.rSquared();   
     Fit.doFit("Gaussian", x, derivneg);
     rsqneg = Fit.rSquared();
     if(rsqpos > rsqneg) {
+    	writeFile(file_lsf, x, deriv);
     	Fit.doFit("Gaussian", x, deriv);
     	off_g = Fit.p(0);
     	mean_g = Fit.p(2);
@@ -114,6 +119,8 @@ macro "single_fit_edge" {
     	area_g = sqrt(2 * PI) * peak_g * width_g;
     }
 	else {
+		writeFile(file_lsf, x, derivneg);
+		
     	Fit.doFit("Gaussian", x, derivneg);
     	off_g = Fit.p(0);
     	mean_g = Fit.p(2);
@@ -224,9 +231,9 @@ macro "single_fit_edge" {
   	}
   	Plot.show();
   	// write results to file
-	file = File.open(dir + imgname_split[0] + ".txt");
-	print(file, "frequency (cycles/mm)" + "\t" + "Raw MTF (a.u)"); 
-    writeFile(file, f, mtf_arr);
+	file_mtf = File.open(dir + "MTF" + imgname_split[0] + ".txt");
+	print(file_mtf, "frequency (cycles/mm)" + "\t" + "Raw MTF (a.u)"); 
+    writeFile(file_mtf, f, mtf_arr);
 	
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
 	print("Contrast" + ":", AREA + " DN");
@@ -261,6 +268,7 @@ function writeFile(f, x, y) {
     	z++;
 	    print(f, zz);
 	}
+	File.close(f);
 }
 //    notes:
 // 1. Since LSF is gaussian (real and even), the fourier transform is also real and even.
