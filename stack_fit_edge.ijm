@@ -15,6 +15,7 @@
  * 						3/19/2015: Changed FWHM vs. pos (mm) fit to third order.
  * 						3/31/2015: start and stop are not global variables anymore.
  * 						4/18/2015: Changed user dialog display so that only one dialog shows.
+ * 						5/05/2015:   Removed MTF related dialog and stack displays. 
  */
  
 // Global scan ioc pv name 
@@ -41,24 +42,8 @@ macro "stack_fit_edge" {
   
 	imgname = getTitle(); 
     dir = getDirectory("image");
-    
-    if (is_scan == "No") {
-    	Dialog.create("Add Parameters");
-    	Dialog.addNumber("Incidence Angle (deg):", 90);
-    	Dialog.addNumber("Image Pixel Size (um)", 32.5);
-    	Dialog.addChoice("Normalize MTF:", mtf_norm_choice);
-  		Dialog.show();		
-  		sine_angle = parseFloat(sin((PI/180) * parseFloat(Dialog.getNumber())));
-  		pix_size = parseFloat(Dialog.getNumber());
-  		mtf_norm_choice = Dialog.getChoice();
-    }
-    else {
-    	mtf_norm_choice = "No";
-    	sine_angle = 0.0;
-        pix_size = 0.0;
-    }
 
-    args = lsf_edge + " " + fit_func + " " + sine_angle + " " + pix_size + " " + mtf_norm_choice;
+    args = lsf_edge + " " + fit_func;
     
     if (imgname == "Stack" || nSlices > 1) {    	
     	// array for scan axis
@@ -106,21 +91,9 @@ macro "stack_fit_edge" {
     	for (i = 1; i <= nSlices; i++) {
     		setSlice(i);
     		d = runMacro("single_fit_edge", args);
-    		selectWindow("MTF");
-  	 		run("Copy");
+  	 		selectWindow("LSF");
   	 		w = getWidth;
   	 		h = getHeight;
-  	 		close();
-  	 		if (mtf_stack==0) {
-            	newImage("MTF Plots", "8-bit", w, h, 1);
-            	mtf_stack = getImageID;
-        	} 
-        	else {
-            	selectImage(mtf_stack);
-            	run("Add Slice");
-        	}
-        	run("Paste");
-  	 		selectWindow("LSF");
   	 		run("Copy");
     		close();
         	if (lsf_stack==0) {
