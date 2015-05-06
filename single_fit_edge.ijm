@@ -8,7 +8,7 @@
  *  __status__          =   "stable"
  *  __date__            =   "2/27/15"
  *  __version__         =   "1.0"
- *  __to-do__			=	1. There is an issue with the zero-frequency value of the MTF (at least I think its an issue)  
+ *  __to-do__			=	  
  *  						   
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
@@ -18,10 +18,11 @@
  *  						3/25/15: Fixed normalization issue of mtf. Raw mtf should give proper contrast values now.
  *  						3/30/15: Added method for % roi selected in image to be printed in log
  *  						3/31/15: MTF is normalized now. 
+ *  						5/05/15:  Moved MTF algorithm to py script. Removed from here. 
  */
+ 
 requires("1.49i");
 macro "single_fit_edge" {
-
 	imgname = getTitle(); 
 	// remove .tif
 	imgname_split = split(imgname,".");
@@ -35,21 +36,15 @@ macro "single_fit_edge" {
   		Dialog.create("Menu");
 		Dialog.addChoice("Choose Edge:", edge_choice, "Horizontal");
   		Dialog.addChoice("Choose Fit:", fit_choice, "Gaussian"); 
-  		// This is only used to generate MTF x-axis in cycles/mm
-  		Dialog.addNumber("Image Pixel Size (um)", 32.5);
   		Dialog.show();
   		lsf_edge = Dialog.getChoice();
     	fit_func = Dialog.getChoice();
-    	pix_size = parseFloat(Dialog.getNumber());
 	}
 	else {
 		// use the setting from stack_fit_edge.ijm
 		arr = split(args, " ");
 		lsf_edge = arr[0];
     	fit_func = arr[1];
-    	sine_angle = arr[2];
-    	pix_size  = arr[3];
-    	mtf_norm_choice = arr[4];
 	}
 	imgname = getTitle(); 
 	// Remove scaling
@@ -165,76 +160,7 @@ macro "single_fit_edge" {
     	FWHM = abs(FWHM_l);
     	AREA = abs(area_l);
 	}
-	// Now for mtf
-    windowType = "None"; // None, Hamming, Hann or Flattop
-    len = deriv.length;
-  	x_mtf = newArray(len);
-  	a_mtf = newArray(len);
-  for (i = 0; i < len; i++) 
-  {
-       x_mtf[i] = i;
-  }
-    // This performs a 1D fast hartley transform. Should be fine since we require |MTF| only
-    // and the LSF is real-valued.
-    mtf_arr = Array.fourier(deriv, windowType);
-    
-    // perform rms correction 
-    for (i = 0; i < lengthOf(mtf_arr); i++) {
-    	// DC value i.e. peak height
-  		 if (i == 0) {
-  		 	 mtf_arr[i] = mtf_arr[i] * sqrt(2) ;
-  		 }
-  		 // rest of the harmonics
-  		 else {
-  		 	mtf_arr[i] = mtf_arr[i];
-  		 }
-    }
-    
-    mtf_norm = newArray(mtf_arr.length);
-    f = newArray(lengthOf(mtf_arr));
-    mtf_arr_stat = Array.getStatistics(mtf_arr, min, max, mean, stdDev);
-    mtf_arr_max = mtf_arr_stat[1];
-    if (mtf_norm_choice == "Yes") {
-		for (i = 0; i < lengthOf(mtf_arr); i++) {
-			mtf_norm[i] = parseFloat(mtf_arr[i]/mtf_arr[0]);
-  			if (pix_size != 0 && sine_angle != 0) {
-  		 		// Sampling period
-     			T = parseFloat(len * pix_size * sine_angle * 0.001); // T=len/w
-   		 		f[i] = i/T;
-  		 	}
-  		 	else {
-  		 		f[i] = i/len;
-  		 	}
-  		}	
-    }
-    else {
-    	for (i = 0; i < lengthOf(mtf_arr); i++) {
-    		mtf_norm[i] = mtf_arr[i];
-  			if (pix_size != 0 && sine_angle != 0) {
-  		 		// Sampling period
-     			T = parseFloat(len * pix_size * sine_angle * 0.001); // T=len/w
-   		 		f[i] = i/T;
-  		 	}
-  		 	else {
-  		 		f[i] = i/len;
-  		 	}
-  		}	
-    }
-  	
-  	if (pix_size != 0) {
-  		Plot.create("MTF", "frequency (cycles/mm)", "MTF", f, mtf_norm); 
-  		makeFancy(f, mtf_norm);
-  	}
-  	else {
-  		Plot.create("MTF", "frequency bin", "MTF", f, mtf_norm);
-  		makeFancy(f, mtf_norm);
-  	}
-  	Plot.show();
-  	// write results to file
-	file_mtf = File.open(dir + "MTF" + imgname_split[0] + ".txt");
-	print(file_mtf, "frequency (cycles/mm)" + "\t" + "Raw MTF (a.u)"); 
-    writeFile(file_mtf, f, mtf_arr);
-	
+
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
 	print("Contrast" + ":", AREA + " DN");
 	print("ROI (W x H): " + toString(width_roi) + " x " + toString(height_roi) + " pixels"); 
@@ -270,12 +196,3 @@ function writeFile(f, x, y) {
 	}
 	File.close(f);
 }
-//    notes:
-// 1. Since LSF is gaussian (real and even), the fourier transform is also real and even.
-// 2. Array.Fourier() does a 1D Fast Hartley transform H(f),which has a real kernel (cas(wx))
-// 3. Need to convert Hartley to Fourier and then take amplitude only. To do this use the
-//	  relation:
-//    F(f) = (H(f) + H(-f))/2 + i(H(f) - H(-f))/2 with H(f) = H(-f) 
-//    So F(f) = H(f) (Same as fourier for real and even signals) 
-      	
- 
