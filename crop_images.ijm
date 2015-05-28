@@ -16,7 +16,7 @@ macro "crop_images" {
     image_0 = File.openDialog("Pick an image *_0");
     // Seperate the file name and the complete path name
     img_0 = File.name;
-    delimiter = "_0.tif"
+    delimiter = "_0.tif";
     temp_img = replace(img_0, delimiter, "");
     image_dir =  File.directory;
 	// Get all files in that directory. 
