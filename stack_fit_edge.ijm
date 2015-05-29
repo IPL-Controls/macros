@@ -7,15 +7,16 @@
  * __status__   	=   "stable"
  * __date__			=	03/04/2015
  * __to-do__		=
- * __update-log__	=	3/09/2015: LSF and MTF plots are stacked and shown instead of closing them
- * 						3/10/2015: some code clean-up. 
- * 						3/11/2015: Scan settings are now read using epics plugin
- * 						3/13/2015: Scan step is also read from epics plugin, global variable for scan IOC
- * 						3/18/2015: Added conditions for generic stack of images but without any sort of scan 
- * 						3/19/2015: Changed FWHM vs. pos (mm) fit to third order.
- * 						3/31/2015: start and stop are not global variables anymore.
- * 						4/18/2015: Changed user dialog display so that only one dialog shows.
- * 						5/05/2015:   Removed MTF related dialog and stack displays. 
+ * __update-log__	=	3/09/15: LSF and MTF plots are stacked and shown instead of closing them
+ * 						3/10/15: some code clean-up. 
+ * 						3/11/15: Scan settings are now read using epics plugin
+ * 						3/13/15: Scan step is also read from epics plugin, global variable for scan IOC
+ * 						3/18/15: Added conditions for generic stack of images but without any sort of scan 
+ * 						3/19/15: Changed FWHM vs. pos (mm) fit to third order.
+ * 						3/31/15: start and stop are not global variables anymore.
+ * 						4/18/15: Changed user dialog display so that only one dialog shows.
+ * 						5/05/15: Removed MTF related dialog and stack displays. 
+ * 						5/29/15: peak position is also written to txt file. race condition in fit3d if scan step = 0
  */
  
 // Global scan ioc pv name 
@@ -47,12 +48,12 @@ macro "stack_fit_edge" {
     
     if (imgname == "Stack" || nSlices > 1) {    	
     	// array for scan axis
-    	x = newArray(nSlices);
+    	z = newArray(nSlices);
     	if (is_scan == "Yes") {
     		Dialog.create("Scan Settings");
 			Dialog.addMessage("Update Scan settings:")
 			if (is_epics == "Yes") {
-			// Use EPICS IJ plugin to read scan1 settings.
+				// Use EPICS IJ plugin to read scan1 settings.
 				run("EPICSIJ ");
 				Dialog.addNumber("start:", Ext.read(SCAN_IOC + ".P1SP"));
 				Dialog.addNumber("end:", Ext.read(SCAN_IOC + ".P1EP"));
@@ -72,21 +73,21 @@ macro "stack_fit_edge" {
 			}
 			// Create the scan axis
 			temp = start;
- 			for(i = 1; i <= x.length; i++) {	
-     	  		x[i-1] = temp;
+ 			for(i = 1; i <= z.length; i++) {	
+     	  		z[i-1] = temp;
      	  		temp = temp + step;
  			}	 
     	}
     	else {
     		// no scan but still a stack 
-    		for(i = 1; i <= x.length; i++) {	
-     	  		x[i-1] = "N/A";
+    		for(i = 1; i <= z.length; i++) {	
+     	  		z[i-1] = "N/A";
  			}	 	
     	}
-    	y = newArray(nSlices);
-    	p = newArray(nSlices);
+    	fwhm = newArray(nSlices);
+    	contrast = newArray(nSlices);
+    	mean = newArray(nSlices);
     	// put all plots in their seperate respective stacks
-    	mtf_stack = 0;
     	lsf_stack = 0;
     	for (i = 1; i <= nSlices; i++) {
     		setSlice(i);
@@ -106,22 +107,22 @@ macro "stack_fit_edge" {
         	}
         	run("Paste");
     		sp = split(d, " ");
-    		y[i-1] = sp[0];
-    		p[i-1] = sp[1];
+    		fwhm[i-1] = sp[0];
+    		contrast[i-1] = sp[1];
+    		mean[i-1] = sp[2];
     		selectImage(imgname);
      	}	
 		if (is_scan == "Yes") {
 			// plot fwhm and contrast vs. scan axis
-			opt_peakz = plot3d(x, p);
+			opt_peakz = plot3d(z, contrast);
 			close();
- 			opt_fwhmz = plot3d(x, y);
- 			
+ 			opt_fwhmz = plot3d(z, fwhm);	
  			print("Optimum z-position (mm) from fwhm:", opt_fwhmz);
 		}
 		// write results to file
 		f = File.open(dir + "edge_widths_contrast" + ".txt");
-		print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "z (mm)"); 
-    	writeFile(f, x, y, p);
+		print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "Peak position (pixel)" + "\t" + "z (mm)"); 
+    	writeFile(f, z, fwhm, contrast, mean);
     }
     else {
     	// no stack condition
@@ -129,8 +130,8 @@ macro "stack_fit_edge" {
     }
 }
 // Seperate plotting routine for 2nd order fitting
-function plot3d(x, val) {
-	Fit.doFit(2, x, val);
+function plot3d(z, val) {
+	Fit.doFit(2, z, val);
  	Fit.plot();
  	a = Fit.p(0);
 	b = Fit.p(1);
@@ -162,21 +163,26 @@ function plot3d(x, val) {
 	else {
 		opt = "NAN";
 	}	
+	if(step == 0) {
+		opt = 0;
+	}
 	// return the critical point
 	return opt;
 }
 // Seperate write to file routine
-function writeFile(f, x, y, p) {
+function writeFile(f, x, y, p, m) {
     xx = "";
     yy = "";
     pp = "";
+    mm = "";
     zz = "";
     z = 0;
     while(z < x.length) {
     	xx = toString(x[z]) + "\n";
     	yy = toString(y[z]) + "\t";
     	pp = toString(p[z]) + "\t";
-    	zz = yy + pp + xx;
+    	mm = toString(m[z]) + "\t";
+    	zz = yy + pp + mm + xx;
     	z++;
 	    print(f, zz);
 	}
