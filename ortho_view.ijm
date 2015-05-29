@@ -44,7 +44,6 @@ macro "ortho_view" {
 	//open stack file. This is the XY view
 	open(dir + "Stack.tif");
 	imgID = getImageID(); 
-//	run("3D Project...", "projection=[Brightest Point] axis=Y-Axis slice=1 initial=0 total=360 rotation=0.2 lower=1 upper=65536 opacity=0 surface=100 interior=50 interpolate");
 	getDimensions(width, height, channels, slices, frames); 
 	getVoxelSize(voxwidth, voxheight, depth, unit); 
 	if(view ==  "Single Slice") {
@@ -101,60 +100,51 @@ macro "ortho_view" {
     	rename("XZ");
     	orthoXZ = getImageID(); 
     	makestack(orthoXZ, slices, width, height, voxwidth, voxheight, depth, 2); //makestack function see below  
-    	run("Canvas Size...","width=" + w + 4 + " height=" + h + 4 + " position=Center"); 
-		// white frame around the xy image 
-		selectImage(imgID); 	
+		selectImage(imgID); 
     	run("Canvas Size...", "width=" + width + 4 + " height=" + height + 4 + " position=Center"); 
 	}
+
 	else if (view == "All Slices") {
 		setBatchMode(true);
+		// XY view
+		selectImage(imgID); 
+    	run("Canvas Size...", "width=" + width + 4 + " height=" + height + 4 + " position=Center"); 
 		// YZ view
 		run("Reslice [/]...", "output=1.000 start=Left rotate avoid");
 		rename("YZ");
 		getDimensions(w,h,c,s,f); //dimensions are dependent on depth, i.e. slice thickness 
-    	// colY-colored frame around the image 
-    	setBackgroundColor(colY_arr[0],colY_arr[1],colY_arr[2]); 
     	run("Canvas Size...","width="+w+4+" height="+h+4+" position=Center"); 
 		selectImage(imgID);
 		// XZ view
 		run("Reslice [/]...", "output=1.000 start=Top avoid");
 		rename("XZ");
    		getDimensions(w,h,c,s,f); //dimensions are dependent on depth, i.e. slice thickness 
-    	// colX-colored frame around the image 
-    	setBackgroundColor(colX_arr[0],colX_arr[1],colX_arr[2]); 
-    	run("Canvas Size...","width="+w+4+" height="+h+4+" position=Center");      
-    	selectImage(imgID);      
-		// white frame around the xy image 
-    	run("Canvas Size...", "width="+width+4+" height="+height+4+" position=Center"); 
+    	run("Canvas Size...","width="+w+4+" height="+h+" position=Center");       
+    	//3D view
+    	selectImage(imgID);
+    	run("3D Project...", "projection=[Brightest Point] axis=Y-Axis slice=1 initial=0 total=360 rotation=0 lower=1 upper=65536 opacity=0 surface=100 interior=50");
+    	run("32-bit");
+    	run("16-bit");
+    	rename("XYZ");
+    	getDimensions(w,h,c,s,f); //dimensions are dependent on depth, i.e. slice thickness
+    	run("Canvas Size...", "width=" + width + 4 + " height=" + height + 4 + " position=Center"); 
 	}
-
-	// combine views 
-    stk1 = getTitle(); 
-    setBackgroundColor(colCanvas_arr[0], colCanvas_arr[1], colCanvas_arr[2]); 
-    run("Combine...", "stack1=" + "Stack.tif" + " stack2=" + "YZ"); 
-    rename("combi1"); 
-    run("Combine...", "stack1=combi1" +" stack2=" + "XZ" + " combine");
+    run("Combine...", "stack1=[Stack.tif] stack2=[YZ]"); 
+    rename("XY_YZ"); 
+    run("Combine...", "stack1=[XY_YZ] stack2=[XZ] combine");
+    rename("XY_YZ_XZ");
+    
     if (view == "Single Slice") {
     makeLine(x, 0, x, height);
 	run("Add Selection...", "stroke=" + colY + " width=0.1"); // add the vertical crosshair line to the selection 
     makeLine(0, y, width, y);
 	run("Add Selection...", "stroke=" + colX + " width=0.1"); // add the horizontal crosshair line to the selection 
     } 
+    else {
+    	run("Combine...", "stack1=[XY_YZ_XZ] stack2=[XYZ]");
+    	rename("all_views");
+    }
     setBatchMode(false); 
-
-	// black frame around the image + labeling 
-    getDimensions(w, h, c, s, f); // dimensions of the combined stacks 
-    run("Canvas Size...", "width=" + w + 20 + " height=" + h + 40 + " position=Center"); 
-    setFont("Sanserif", 14); 
-    makeText("xy view", 20, 0); 
-    run("Add Selection...", "stroke=" + colZ); 
-    makeText("xz view", 20, h + 18); 
-    run("Add Selection...", "stroke=" + colX); 
-    makeText("yz view", w - 44,0); 
-    run("Add Selection...", "stroke=" + colY); 
-
-	// "stupid" command to unselect the "yz view" text -- most likely there are more elegant ways 
-    makePoint(w*2, h); 
 } 
         
 /*==========================================FUNCTIONS=====================================================*/ 
@@ -208,7 +198,6 @@ function make_init_stack() {
 function coord(imgname) { 
         // function returns the x or y value of the selected section. Extracted from the image title 
         // (e.g. title = YZ 123) --> 123 is returned 
-
         string = substring(imgname, 3, lengthOf(imgname)); 
         return parseInt(string); // Converts string to an integer and returns it. Returns NaN if the string cannot be converted into a integer. 
 } 
@@ -221,7 +210,6 @@ function makestack(imgID, slices, xmax, ymax, voxwidth, voxheight, depth, orient
         // 
         // The last argument of the function (orient) is needed for the orientation. I.e. to differentiate between x and y view 
         
-        setForegroundColor(colZ_arr[0], colZ_arr[1], colZ_arr[2]); 
         neuID = getImageID(); 
         titel = getTitle(); 
         run("Select All"); 
@@ -236,7 +224,6 @@ function makestack(imgID, slices, xmax, ymax, voxwidth, voxheight, depth, orient
                 // draw line indicating the z-plane 
                         if (orient == 1) { 
                                 zspace = depth/voxwidth; // take thickness of z-slices into account 
-                               
                         } 
                         if (orient == 2) { 
                                 zspace = depth/voxheight; 
