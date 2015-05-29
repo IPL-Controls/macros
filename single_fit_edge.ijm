@@ -18,7 +18,8 @@
  *  						3/25/15: Fixed normalization issue of mtf. Raw mtf should give proper contrast values now.
  *  						3/30/15: Added method for % roi selected in image to be printed in log
  *  						3/31/15: MTF is normalized now. 
- *  						5/05/15:  Moved MTF algorithm to py script. Removed from here. 
+ *  						5/05/15: Moved MTF algorithm to py script. Removed from here. 
+ *  						5/29/15: Renamed return variables for better code reading. Macro also returns peak position now. 
  */
  
 requires("1.49i");
@@ -114,8 +115,7 @@ macro "single_fit_edge" {
     	area_g = sqrt(2 * PI) * peak_g * width_g;
     }
 	else {
-		writeFile(file_lsf, x, derivneg);
-		
+		writeFile(file_lsf, x, derivneg);	
     	Fit.doFit("Gaussian", x, derivneg);
     	off_g = Fit.p(0);
     	mean_g = Fit.p(2);
@@ -130,6 +130,7 @@ macro "single_fit_edge" {
     	Fit.plot();
     	FWHM = FWHM_g;
     	AREA = abs(area_g);
+    	MEAN = mean_g;
     	rename("LSF");
 	}
 	if (fit_func == "Lorentzian") {
@@ -159,6 +160,7 @@ macro "single_fit_edge" {
     	area_l = (abs(peak_l) * abs(FWHM_l)) * ((PI/2));//-atan(-2*mean_l/abs(FWHM_l)));
     	FWHM = abs(FWHM_l);
     	AREA = abs(area_l);
+    	MEAN = mean_l;
 	}
 
 	print(fit_func + " " + lsf_edge + " Edge FWHM" + ":", FWHM + " pixels");
@@ -166,11 +168,11 @@ macro "single_fit_edge" {
 	print("ROI (W x H): " + toString(width_roi) + " x " + toString(height_roi) + " pixels"); 
 	print(toString(per_sel) + " % " +  "of total image selected!");
 	print("---------------------------------------------------------");
-	outstr = toString(FWHM, 4);
-	outstr_1 = toString(AREA, 4);
-	// Return fwhm and area under lsf (edge step height)
-	return outstr + " " + outstr_1;
-		
+	fwhm_str = toString(FWHM, 4);
+	contrast_str = toString(AREA, 4);
+	mean_str = toString(MEAN, 4);
+	// Return fwhm, area under lsf (edge step height) and peak position in pixels
+	return fwhm_str + " " + contrast_str + " " + mean_str;		
 }
 // Makes the plots looks fancier
 function makeFancy(x_val, y_val) {
