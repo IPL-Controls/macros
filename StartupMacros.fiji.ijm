@@ -190,12 +190,11 @@ macro "Flood Fill Tool -C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb6
 	floodFill(x, y, floodType);
 }
 
+// for TIFF tags
 macro "EpicsTags Action Tool - D22D23D24D25D26D27D32D33D34D35D36D37D38D42D43D46D47D48D49D52D53D56D57D58D59D5aD62D63D64D65D66D67D68D69D6aD6bD72D73D74D75D76D77D78D79D7aD7bD7cD83D84D85D86D87D88D89D8aD8bD8cD8dD94D95D96D97D98D99D9aD9bD9cD9dD9eDa5Da6Da7Da8Da9DaaDabDacDadDaeDb6Db7Db8Db9DbaDbbDbcDbdDc7Dc8Dc9DcaDcbDccDd8Dd9DdaDdbDe9Dea"{
-
-		runMacro("EpicsTags.ijm");
-
+		path = getInfo("image.directory")+File.separator+getInfo("image.filename"); 
+		run("TIFF Tags", "open="+path+" show_ascii_tags_as_string result_limit=80");
 }
-
 
 function draw(width) {
 	requires("1.32g");
