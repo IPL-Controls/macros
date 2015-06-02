@@ -128,6 +128,16 @@ macro "ortho_view" {
     	rename("XYZ");
     	getDimensions(w,h,c,s,f); //dimensions are dependent on depth, i.e. slice thickness
     	run("Canvas Size...", "width=" + width + 4 + " height=" + height + 4 + " position=Center"); 
+    	// run and save MIPs of all ortho views. 
+    	selectImage(imgID);
+    	run("Z Project...", "projection=[Max Intensity]");
+    	saveAs("Tiff", dir + "MIP_XY");
+    	selectImage("YZ");
+    	run("Z Project...", "projection=[Max Intensity]");
+    	saveAs("Tiff", dir + "MIP_YZ");
+    	selectImage("XZ");
+    	run("Z Project...", "projection=[Max Intensity]");
+    	saveAs("Tiff", dir + "MIP_XZ");
 	}
     run("Combine...", "stack1=[Stack.tif] stack2=[YZ]"); 
     rename("XY_YZ"); 
