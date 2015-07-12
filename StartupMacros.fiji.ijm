@@ -191,7 +191,7 @@ macro "Flood Fill Tool - C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb
 }
 */
 var aCmds = newMenu("Alignment Menu Tool",
-	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "-"));
+	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "Align grating Rz", "-"));
 
 macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	cmd = getArgument();
@@ -200,6 +200,9 @@ macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	}
 	else if (cmd=="Find Rx and Y of all mirrors") {
 		runMacro(getDirectory("macros") + "calc_RX_Y_incAngl.ijm");
+	}
+	else if (cmd=="Align grating Rz") {
+		runMacro(getDirectory("macros") + "align_RZ_v3.ijm");
 	}
 	else if (cmd!="-") {
 		run(cmd);
