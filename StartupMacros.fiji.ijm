@@ -44,7 +44,6 @@ function UseHEFT {
 UseHEFT();
 
 // The macro named "AutoRun" runs when ImageJ starts.
-
 macro "AutoRun" {
 	// run all the .ijm scripts provided in macros/AutoRun/
 	autoRunDirectory = getDirectory("imagej") + "/macros/AutoRun/";
@@ -121,6 +120,7 @@ var sCmds = newMenu("Stacks Menu Tool",
 		"Convert Images to Stack", "Convert Stack to Images", "Make Montage...", "Reslice [/]...", "Z Project...",
 		"3D Project...", "Plot Z-axis Profile", "-", "Start Animation", "Stop Animation", "Animation Options...",
 		"-", "MRI Stack (528K)"));
+		
 macro "Stacks Menu Tool - C037T0b11ST8b09tTcb09k" {
 	cmd = getArgument();
 	if (cmd!="-") run(cmd);
@@ -167,7 +167,7 @@ function getLutList() {
 	}
 	return list;
 }
-
+/*
 macro "Pencil Tool - C037L494fL4990L90b0Lc1c3L82a4Lb58bL7c4fDb4L5a5dL6b6cD7b" {
 	getCursorLoc(x, y, z, flags);
 	if (flags&alt!=0)
@@ -182,20 +182,42 @@ macro "Paintbrush Tool - C037La077Ld098L6859L4a2fL2f4fL3f99L5e9bL9b98L6888L5e8dL
 	draw(brushWidth);
 }
 
-macro "Flood Fill Tool -C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb6bcD09D94" {
+macro "Flood Fill Tool - C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb6bcD09D94" {
 	requires("1.34j");
 	setupUndo();
 	getCursorLoc(x, y, z, flags);
 	if (flags&alt!=0) setColorToBackgound();
 	floodFill(x, y, floodType);
 }
+*/
+var aCmds = newMenu("Alignment Menu Tool",
+	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "-"));
 
-// for TIFF tags
-macro "EpicsTags Action Tool - D22D23D24D25D26D27D32D33D34D35D36D37D38D42D43D46D47D48D49D52D53D56D57D58D59D5aD62D63D64D65D66D67D68D69D6aD6bD72D73D74D75D76D77D78D79D7aD7bD7cD83D84D85D86D87D88D89D8aD8bD8cD8dD94D95D96D97D98D99D9aD9bD9cD9dD9eDa5Da6Da7Da8Da9DaaDabDacDadDaeDb6Db7Db8Db9DbaDbbDbcDbdDc7Dc8Dc9DcaDcbDccDd8Dd9DdaDdbDe9Dea"{
-		path = getInfo("image.directory")+File.separator+getInfo("image.filename"); 
-		run("TIFF Tags", "open="+path+" show_ascii_tags_as_string result_limit=80");
+macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
+	cmd = getArgument();
+	if (cmd=="Align Single Mirror") {
+		runMacro(getDirectory("macros") + "align_single_mirror.ijm");
+	}
+	else if (cmd=="Find Rx and Y of all mirrors") {
+		runMacro(getDirectory("macros") + "calc_RX_Y_incAngl.ijm");
+	}
+	else if (cmd!="-") {
+		run(cmd);
+	}
 }
-
+// for EPICS AD Viewer
+macro "EPICS Area Detector Viewer Action Tool - Cf00B03T0b12ATab12D" { 
+		run("EPICS AD Viewer", "");
+}
+// for TIFF tags
+macro "EPICS Tags Action Tool - Cf00D22D23D24D25D26D27D32D33D34D35D36D37D38D42D43D46D47D48D49D52D53D56D57D58D59D5aD62D63D64D65D66D67D68D69D6aD6bD72D73D74D75D76D77D78D79D7aD7bD7cD83D84D85D86D87D88D89D8aD8bD8cD8dD94D95D96D97D98D99D9aD9bD9cD9dD9eDa5Da6Da7Da8Da9DaaDabDacDadDaeDb6Db7Db8Db9DbaDbbDbcDbdDc7Dc8Dc9DcaDcbDccDd8Dd9DdaDdbDe9Dea"{
+		path = getInfo("image.directory") + File.separator + getInfo("image.filename"); 
+		run("EPICS Tiff Tags", "open=" + path + " show_ascii_tags_as_string result_limit=80");
+}
+// for ccd eval
+macro "CCD Evaluation Action Tool - Cf00B03T0b10CT7b10CTeb10D" { 
+		run("Detector Analysis ", "");
+}
 function draw(width) {
 	requires("1.32g");
 	setupUndo();
