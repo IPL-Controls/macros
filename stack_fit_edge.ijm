@@ -6,7 +6,7 @@
  * __version__		=	'1.0'
  * __status__   	=   "stable"
  * __date__			=	03/04/2015
- * __to-do__		=
+ * __to-do__		=	add progress bar
  * __update-log__	=	3/09/15: LSF and MTF plots are stacked and shown instead of closing them
  * 						3/10/15: some code clean-up. 
  * 						3/11/15: Scan settings are now read using epics plugin

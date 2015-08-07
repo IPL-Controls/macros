@@ -8,8 +8,7 @@
  *  __status__          =   "stable"
  *  __date__            =   "2/27/15"
  *  __version__         =   "1.0"
- *  __to-do__			=	  
- *  						   
+ *  __to-do__			=				   
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
  *  						3/10/15: added mtf capability, edge step height evaluation in terms of Lorentzian LSF fit area.
  *  						3/13/15: prints contrast count as well.
@@ -182,7 +181,6 @@ function makeFancy(x_val, y_val) {
         Plot.setColor("Gray");
         Plot.add("line", x_val, y_val);
 }
-
 // Seperate write to file routine
 function writeFile(f, x, y) {
     xx = "";
