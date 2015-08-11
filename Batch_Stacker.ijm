@@ -17,7 +17,7 @@ function open_as_image_sequence() {
 	dir_src = getDirectory("Select Input Directory");
 	file_list = getFileList(dir_src);
 	setBatchMode(true);
-    id = file_list[file_list.length - 1];
+    id = file_list[0];
 	run("Image Sequence...", "open="+dir_src+File.separator+"file=.tif sort");
 	saveAs("Tiff", dir_src + "STK" + id);
 	// Cleanup
