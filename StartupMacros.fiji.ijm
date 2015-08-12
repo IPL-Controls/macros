@@ -218,8 +218,26 @@ macro "EPICS Tags Action Tool - Cf00D22D23D24D25D26D27D32D33D34D35D36D37D38D42D4
 		run("EPICS Tiff Tags", "open=" + path + " show_ascii_tags_as_string result_limit=80");
 }
 // for ccd eval
-macro "CCD Evaluation Action Tool - Cf00B03T0b10CT7b10CTeb10D" { 
-		run("Detector Analysis ", "");
+var cCmds = newMenu("CCD Menu Tool",
+	newArray("Stack in Batch Mode", "Crop Images", "Find Edge Resolution", "Dark-Flat Correction", "-"));
+	
+macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" { 
+	cmd = getArgument();
+	if (cmd=="Stack in Batch Mode") {
+		runMacro(getDirectory("macros") + "batch_stacker.ijm");
+	}
+	else if (cmd=="Crop Images") {
+		runMacro(getDirectory("macros") + "crop_images.ijm");
+	}
+	else if (cmd=="Find Edge Resolution") {
+		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
+	}
+	else if (cmd=="Dark-Flat Correction") {
+		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
+	}
+	else if (cmd!="-") {
+		run(cmd);
+	}
 }
 function draw(width) {
 	requires("1.32g");
