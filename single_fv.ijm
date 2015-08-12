@@ -8,20 +8,23 @@
  *  __to-do__			=				   
  *  __update-log__		= 	
  */
- 
+var 
+    window_type = "none",
+    tolerance = 2,
+;
+
 requires("1.49i");
 macro "single_fringe_visibility" {
 	imgname = getTitle(); 
-	// remove .tif
+	// remove extension
 	imgname_split = split(imgname,".");
     dir = getDirectory("image");
-
-    ft_dim = newArray("x", "y");
     // get input argument if any
 	args = getArgument();
+	ft_dim = newArray("x", "y");
 	if (args == "") {
   		Dialog.create("Main Menu");
-		Dialog.addNumber("Pixel Size:", 50, 6, 6,"um");
+		Dialog.addNumber("Pixel Size:", 50, 3, 6,"um");
 		Dialog.addChoice("FT dimension:",ft_dim, "x");
   		Dialog.show();
   		pixel_size = Dialog.getNumber();
@@ -53,86 +56,99 @@ macro "single_fringe_visibility" {
 	}
 	run("Plot Profile");
 	Plot.getValues(x, y);
-    close();
+	// Define the sinusoidal fit function to use
+		/* a = Amplitude
+		 * b = 
+		 * c = phase
+		 * d = offset
+		 */ 
+  	sine_equation = "y = a + b * sin(x + c)";
+  	initial_guesses = newArray(0, 0, 0);
+  	Fit.doFit(sine_equation, x, y, initial_guesses);
+  	Fit.plot();
+  	
+	findFringeVisibility(x, y, pixel_size);
+	findFringeVisibilityAlt(x, y, pixel_size);
+ //   close();
     
-    // Get derivative (raw LSF) (y[i+1]-y[i-1])/2;    
+    // Do the Fourier transform  
     len = x.length;
-    window_type = "none";
-    
     ft = Array.fourier(y, window_type);
     ft_x = newArray(lengthOf(ft));
     for (i = 0; i < lengthOf(ft); i++) {
     	ft_x[i] = i;
     } 
-    
-    Plot.create("Fourier amplitudes: "+window_type, "frequency bin", "amplitude (RMS)", ft_x, ft);
+    Plot.create("Fourier amplitudes: " + window_type, "frequency bin", "amplitude (RMS)", ft_x, ft);
   	Plot.show();
-  	run("Find Peaks", "min._peak_amplitude=5 min._peak_distance=0 min._value=NaN max._value=NaN list");
-//	saveAs("Results", "/Path/to/Output/Directory/Plot Values.csv");
-	run("Close");
-
-  	fhtSize = 2*lengthOf(ft_x);
-  	
-  /*  // force tails of LSF to go to 0 for finite roi
-    for(i = 1; i < npts - 1; i++) {
-    	deriv[i] = (parseFloat(y[i+1]) - parseFloat(y[i-1]))/2;
-    	deriv_nocorr[i]  = deriv[i];
-    }
-	// Linear baseline correction
-    x0 = (x[1] + x[2] + x[3] + x[4])/4;
-    deriv0 = (deriv[1] + deriv[2] + deriv[3] + deriv[4])/4;
-    x1 = (x[npts - 2] + x[npts - 3] + x[npts - 4] + x[npts - 5])/4;
-    deriv1 = (deriv[npts - 2] + deriv[npts - 3] + deriv[npts - 4] + deriv[npts - 5])/4;
-    slope = (deriv1 - deriv0)/(x1 - x0);
-    offset = (deriv0 * x1 - deriv1 * x0)/(x1 - x0);
-    // Following is baseline corrected LSF
-    for(i = 1; i < npts - 1; i++) {
-    	deriv[i] = deriv[i] - offset - slope * x[i];
-    }
-    for(i = 1; i < npts - 1; i++) {
-    	derivneg[i] = -deriv[i];
-    }
-    // write lsf results to file
-	file_lsf = File.open(dir + "LSF" + imgname_split[0] + ".txt");
-	print(file_lsf, "samples (n)" + "\t" + "Raw LSF (d(DN)/dn)"); 
+  	ft_peak_position = Array.findMaxima(ft, tolerance);
+	for(i = 0; i < lengthOf(ft_peak_position); i++) {
+		temp = ft_peak_position[i];
+	}
+	h_0 = ft[ft_peak_position[0]];
+	h_1 = ft[ft_peak_position[1]];
+	fringe_visibility = h_1/h_0;
+	print (h_0);
+	print (h_1);
+	print (fringe_visibility);
+}
+function findFringeVisibility(x_val, y_val, pix_size) {
+	i_max = 0;
+	i_min = 0;
+	
+	// find minimum and maximum positions
+	min_loc = Array.findMinima(y_val, tolerance);
+	max_loc = Array.findMaxima(y_val, tolerance);
+	period = pix_size * (min_loc[0] - min_loc[1]);
+	Array.sort(min_loc);
+	Array.sort(max_loc);
+//	print (lengthOf(max_loc));
+//	Array.print(max_loc);
+//	Array.print(min_loc);
+	for (i = 0; i < lengthOf(max_loc); i++) {
+    	i_max = i_max + y_val[max_loc[i]];
+    } 
+    i_max = i_max / lengthOf(max_loc);
     
-    // LSF fitting routine (Always do gaussian fit and use gauss fit parameters to guess lorentzian fit parameters)
-    deriv_gauss_fit = Fit.doFit("Gaussian", x, deriv);
-    rsqpos = Fit.rSquared();   
-    Fit.doFit("Gaussian", x, derivneg);
-    rsqneg = Fit.rSquared();
-    if(rsqpos > rsqneg) {
-    	writeFile(file_lsf, x, deriv);
-    	Fit.doFit("Gaussian", x, deriv);
-    	off_g = Fit.p(0);
-    	mean_g = Fit.p(2);
-    	peak_g = Fit.p(1) - Fit.p(0);
-    	width_g = Fit.p(3);
-    	// LSF fwhm
-    	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    	// This is the contrast (I_max - I_min) in terms of ESF step height 
-    	area_g = sqrt(2 * PI) * peak_g * width_g;
-    }
-	else {
-		writeFile(file_lsf, x, derivneg);	
-    	Fit.doFit("Gaussian", x, derivneg);
-    	off_g = Fit.p(0);
-    	mean_g = Fit.p(2);
-    	peak_g = Fit.p(1) - Fit.p(0);
-    	width_g = Fit.p(3);
-    	// LSF fwhm
-    	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    	// This is the contrast (I_max - I_min) in terms of ESF step height 
-    	area_g = sqrt(2 * PI) * peak_g * width_g;
-    }           
-    if (fit_func == "Gaussian") {
-    	Fit.plot();
-    	FWHM = FWHM_g;
-    	AREA = abs(area_g);
-    	MEAN = mean_g;
-    	rename("LSF");
-	}*/
+	for (i = 0; i < lengthOf(min_loc); i++) {
+    	i_min = i_min + y_val[min_loc[i]];
+	}
+	i_min = i_min / lengthOf(min_loc);
+	fringe_visibility_1 = ( i_max - i_min ) / (2 * ( i_max + i_min ));
+    print(fringe_visibility_1); 
+}
 
+function findFringeVisibilityAlt(x_val, y_val, pix_size) {
+    deriv = newArray(x_val.length);
+    max_loc_alt = newArray();
+    min_loc_alt = newArray();
+    
+    i_max_alt = 0;
+    i_min_alt = 0;
+    for(i = 1; i < x_val.length - 1; i++) {
+    	deriv[i] = (parseFloat(y_val[i+1]) - parseFloat(y_val[i-1]))/2;
+    	// get extreme positions.
+    	if ( ( deriv[i] < 0 && deriv[i - 1] >= 0)) {
+    		max_loc_alt = Array.concat(max_loc_alt, y_val[i - 1]);
+    	}
+    	if ( ( deriv[i] >= 0 && deriv[i - 1] < 0 ) ) {
+    		min_loc_alt = Array.concat(min_loc_alt, y_val[i - 1]);
+    	}
+    }
+//	Array.print(max_loc_alt);
+//	Array.print(min_loc_alt);
+    for (i = 0; i < lengthOf(max_loc_alt); i++) {
+    	i_max_alt = i_max_alt + y_val[max_loc_alt[i]];
+    } 
+    i_max_alt = i_max_alt / lengthOf(max_loc_alt);
+    
+	for (i = 0; i < lengthOf(min_loc_alt); i++) {
+    	i_min_alt = i_min_alt + y_val[min_loc_alt[i]];
+	}
+	i_min_alt = i_min_alt / lengthOf(min_loc_alt);
+//	print(i_min_alt);
+//	print(i_max_alt);
+	fringe_visibility_2 = ( i_max_alt - i_min_alt ) / (2 * ( i_max_alt + i_min_alt ));
+	print (fringe_visibility_2);
 }
 // Makes the plots looks fancier
 function makeFancy(x_val, y_val) {
