@@ -16,10 +16,10 @@
 macro "crop_images" {
 	// Open the first image file in the sequence.
     image_0 = File.openDialog("Pick an image *_");
-    image_dir =  File.directory;
+    var image_dir =  File.directory;
     // Seperate the file name and the complete path name
     img_0 = File.name;  
-    setBatchMode(true);
+    setBatchMode(false);
     open(img_0);
     h = getHeight();
     w = getWidth();
@@ -28,7 +28,7 @@ macro "crop_images" {
 	// Get all files in that directory. 
 	fileList = getFileList(image_dir);
 	// Create an array to match nth sequence image with 0th 
-    image_n = newArray();
+    var image_n = newArray();
     num_images = 0;
 	for (i = 0; i < fileList.length; i++) {
 		id = fileList[i];
@@ -41,7 +41,7 @@ macro "crop_images" {
 		}
 		close(id);
 		// Check if dark field is in the source directory. If exists save.
-		if (startsWith(id, "DARK")) {
+		if (startsWith(id, "DARK") || startsWith(id, "dark")) {
 			dark_field = id;
 		}
 		else {
@@ -106,28 +106,32 @@ macro "crop_images" {
 	// If set as 0 then open first image for roi selection.
 	for (tiffc = 0; tiffc < num_images; tiffc++) {
 		open(image_n[tiffc]);
-		// Remove scale
 		run("Set Scale...", "distance=0 known=0 pixel=1 unit=pixel global");
+	}
+	run("Images to Stack", "name=Stack title=[] use");
+		// Remove scale
 		if (df_corr == 1) {
 			if (dark_field != "") {
 				// Perform dark correction only
-				imageCalculator("Subtract create 32-bit", dark_field, image_n[tiffc]);
+				open(dark_field);
+				imageCalculator("Subtract create 32-bit", "Stack", dark_field);
 				runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-				saveAs("Tiff", image_dir + "CRPDFCOR" + image_n[tiffc]);
-				close();
+				run("Stack to Images");
+				close(dark_field);
+				saveTiff(num_images, df_corr);
+		//		close("Stack");
 			}
 			else {
 				runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-				saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
-				close();
+				run("Stack to Images");
+				saveTiff(num_images, df_corr);
 			}
 		}
 		else if (df_corr == 0) {
 			// No correction
-			showProgress(tiffc/num_images);
 			runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
-			close();
+			run("Stack to Images");
+			saveTiff(num_images, df_corr);
 		}
 		else if (df_corr == 2) {
 			if (flat_field != "" && dark_field != "") {
@@ -140,11 +144,32 @@ macro "crop_images" {
 				close();
 			}
 		}
-	}
 }
 function runCrop (ulx, uly, lrx, lry) {
 	makeRectangle(ulx, uly, lrx - ulx + 1, lry - uly + 1); 
 	run("Crop");
 }
+
+function saveTiff (num_tiff, flag) {
+	for (tiffc = 0; tiffc < num_tiff; tiffc++) {
+		if (flag == 0) {
+			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
+			close();
+		}
+		else if(flag == 1) {
+			saveAs("Tiff", image_dir + "CRPDFCOR" + image_n[tiffc]);
+			close();
+		}
+		else if (flag == 2) {
+			saveAs("Tiff", image_dir + "CRPDFCOR" + image_n[tiffc]);
+			close();
+		}
+		else {
+			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
+			close();
+		}	
+	} 
+}
+
 
 
