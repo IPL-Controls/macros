@@ -11,53 +11,37 @@
  *  						4/18/15: Fixed off by one issue in crop
  *  						8/07/15: Fixed issue of not working when delimiter is tiff instead of tif, Removed dependency of selecting 
  *  								 _0 image.
+ *  						8/14/15: Completely re-worked, to increase processing speed.
  */
  
 macro "crop_images" {
-	// Open the first image file in the sequence.
+	// Select the image and get the directory
     image_0 = File.openDialog("Pick an image *_");
+    temp = split(File.nameWithoutExtension, "_");
+    image_0_noext = "";
+    for(i = 0; i < lengthOf(temp) - 1; i++) {
+    	image_0_noext = image_0_noext + temp[i]; 
+    }
     var image_dir =  File.directory;
-    // Seperate the file name and the complete path name
-    img_0 = File.name;  
-    setBatchMode(false);
-    open(img_0);
-    h = getHeight();
-    w = getWidth();
-    close(img_0);
-    
+    setBatchMode(true);
 	// Get all files in that directory. 
-	fileList = getFileList(image_dir);
-	// Create an array to match nth sequence image with 0th 
-    var image_n = newArray();
-    num_images = 0;
-	for (i = 0; i < fileList.length; i++) {
-		id = fileList[i];
-		open(id);
-		if (endsWith(image_dir + id, ".tiff") || endsWith(image_dir + id, ".tif")) {
-			if (getHeight() == h && getWidth() == w) {
-				image_n = Array.concat(image_n, fileList[i]);
-				num_images  = num_images+1;
-			}
-		}
-		close(id);
-		// Check if dark field is in the source directory. If exists save.
-		if (startsWith(id, "DARK") || startsWith(id, "dark")) {
-			dark_field = id;
-		}
-		else {
-			dark_field = "";
-		}
-		// Check if flat field is in the source directory. If exists save. 
-		if (startsWith(id, "FLAT")) {
-			flat_field = id;
-		}
-		else {
-			flat_field = "";
-		}
+	fileList = getFileList(image_dir); 
+    var image_names = newArray();
+    dark_field = "";
+	flat_field = "";
+	
+	// Open images in  a virtual stack using regex i.e. if file name contains _[counter]
+	run("Image Sequence...", "open=[&image_0]"+"file=(^" + image_0_noext + "_[0-9]) sort use");
+	// Remove scaling
+	run("Set Scale...", "distance=0 global");
+	rename("Stack");
+	num_images = nSlices;
+	// Save all file names into an array
+	for (i = 1; i <= num_images; i++) {
+		setSlice(i);
+		image_names = Array.concat(image_names,  getInfo("slice.label"));
 	}
-	numTiff = 0;
-	filenum = 0;
-	// Ask for dark correction
+	// Ask for correction
 	Dialog.create("");
 	Dialog.addNumber("Set DF correction setting (0-none, 1-dark only, 2-dark & flat):", 0);
 	Dialog.show();
@@ -103,29 +87,27 @@ macro "crop_images" {
 	if (upper_left_x != 0 && upper_left_y != 0 && lower_right_x != 0 && lower_right_y != 0) {
 		File.saveString(toString(upper_left_x) + " " + toString(upper_left_y) + " " + toString(lower_right_x) + " " + toString(lower_right_y), dir + "cropcorners" + ".txt");
 	}
-	// If set as 0 then open first image for roi selection.
-	for (tiffc = 0; tiffc < num_images; tiffc++) {
-		open(image_n[tiffc]);
-		run("Set Scale...", "distance=0 known=0 pixel=1 unit=pixel global");
-	}
-	run("Images to Stack", "name=Stack title=[] use");
-		// Remove scale
 		if (df_corr == 1) {
-			if (dark_field != "") {
-				// Perform dark correction only
-				open(dark_field);
-				imageCalculator("Subtract create 32-bit", "Stack", dark_field);
-				runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-				run("Stack to Images");
-				close(dark_field);
-				saveTiff(num_images, df_corr);
-		//		close("Stack");
+			// Check for dark field image in source directory
+			for (i = 0; i < fileList.length; i++) {
+				id = fileList[i];
+				// Check if dark field is in the source directory. If exists save.
+				if (startsWith(id, "DARK") || startsWith(id, "dark")) {
+					dark_field = id;
+				}
 			}
-			else {
-				runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-				run("Stack to Images");
-				saveTiff(num_images, df_corr);
+			if (dark_field == "") {
+				// Dark field image not found, Ask user to select dark field image.
+    			File.openDialog("Select Dark-field image");
+    			dark_field = File.name;
 			}
+			open(dark_field);
+			imageCalculator("Subtract create 32-bit stack", "Stack", dark_field);
+			runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
+			run("Stack to Images");
+			close(dark_field);
+			saveTiff(num_images, df_corr);
+			close("Stack");
 		}
 		else if (df_corr == 0) {
 			// No correction
@@ -134,15 +116,30 @@ macro "crop_images" {
 			saveTiff(num_images, df_corr);
 		}
 		else if (df_corr == 2) {
-			if (flat_field != "" && dark_field != "") {
-				// Perform dark-flat correction (I-D/F-D)
-				den = imageCalculator("Subtract create 32-bit", dark_field, flat_field);
-				num = imageCalculator("Subtract create 32-bit", dark_field, image_n[tiffc]);
-				imageCalculator("Divide create 32-bit", num, den);
-				runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
-				saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
-				close();
+			// Check for flat and dark field images in source directory
+			for (i = 0; i < fileList.length; i++) {
+				id = fileList[i];
+				// Check if dark field is in the source directory. If exists save.
+				if (startsWith(id, "DARK") || startsWith(id, "dark")) {
+					dark_field = id;
+				}
+				// Check if flat field is in the source directory. If exists save. 
+				else if (startsWith(id, "FLAT") || startsWith(id, "flat")) {
+					flat_field = id;
+				}
 			}
+			if (flat_field != "" && dark_field != "") {
+				// flat field image not found, Ask user to select dark field image.
+    			flat_field = File.openDialog("Select Flat-field image");
+    			dark_field = File.openDialog("Select Dark-field image");
+			}
+			// Perform dark-flat correction (I-D/F-D)
+			den = imageCalculator("Subtract create 32-bit", dark_field, flat_field);
+			num = imageCalculator("Subtract create 32-bit", dark_field, image_n[tiffc]);
+			imageCalculator("Divide create 32-bit", num, den);
+			runCrop(upper_left_x, upper_left_y, lower_right_x, lower_right_y);
+			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
+			close();
 		}
 }
 function runCrop (ulx, uly, lrx, lry) {
@@ -151,21 +148,21 @@ function runCrop (ulx, uly, lrx, lry) {
 }
 
 function saveTiff (num_tiff, flag) {
-	for (tiffc = 0; tiffc < num_tiff; tiffc++) {
+	for (tiffc = 1; tiffc <= num_tiff; tiffc++) {
 		if (flag == 0) {
-			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
+			saveAs("Tiff", image_dir + "CRP" + image_names[num_tiff-tiffc]);
 			close();
 		}
 		else if(flag == 1) {
-			saveAs("Tiff", image_dir + "CRPDFCOR" + image_n[tiffc]);
+			saveAs("Tiff", image_dir + "CRPDFCOR" + image_names[num_tiff-tiffc]);
 			close();
 		}
 		else if (flag == 2) {
-			saveAs("Tiff", image_dir + "CRPDFCOR" + image_n[tiffc]);
+			saveAs("Tiff", image_dir + "CRPFFCOR" + File.name);
 			close();
 		}
 		else {
-			saveAs("Tiff", image_dir + "CRP" + image_n[tiffc]);
+			saveAs("Tiff", image_dir + "CRP" + File.name);
 			close();
 		}	
 	} 
