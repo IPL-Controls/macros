@@ -9,10 +9,9 @@
  *  __update-log__		= 	
  */
 var 
-    window_type = "none",
+    window_type = "None",
     tolerance = 2,
 ;
-
 requires("1.49i");
 macro "single_fringe_visibility" {
 	imgname = getTitle(); 
@@ -39,6 +38,10 @@ macro "single_fringe_visibility" {
 	imgname = getTitle(); 
 	// Remove scaling
 	run("Set Scale...", "distance=0 global");
+	// If no line or rectangle ROI selected then make one for full image.
+	if (selectionType() != 0 || selectionType() != 5) {
+		makeRectangle(0, 0, getWidth(), getHeight());
+	}
 	// Find percent roi selected
 	getSelectionBounds(upper_left_x, upper_left_y, width_roi, height_roi);
 	width_image = getWidth();
@@ -56,6 +59,7 @@ macro "single_fringe_visibility" {
 	}
 	run("Plot Profile");
 	Plot.getValues(x, y);
+	close();
 	// Define the sinusoidal fit function to use
 		/* a = Amplitude
 		 * b = 
@@ -66,9 +70,9 @@ macro "single_fringe_visibility" {
   	initial_guesses = newArray(0, 0, 0);
   	Fit.doFit(sine_equation, x, y, initial_guesses);
   	Fit.plot();
-  	
-	findFringeVisibility(x, y, pixel_size);
-	findFringeVisibilityAlt(x, y, pixel_size);
+ 	close();
+//	findFringeVisibility(x, y, pixel_size);
+//	findFringeVisibilityAlt(x, y, pixel_size);
  //   close();
     
     // Do the Fourier transform  
@@ -86,9 +90,9 @@ macro "single_fringe_visibility" {
 	}
 	h_0 = ft[ft_peak_position[0]];
 	h_1 = ft[ft_peak_position[1]];
-	fringe_visibility = h_1/h_0;
+	fringe_visibility = sqrt(2) * h_1/h_0;
 	print (h_0);
-	print (h_1);
+	print (h_1 * sqrt(2));
 	print (fringe_visibility);
 }
 function findFringeVisibility(x_val, y_val, pix_size) {
