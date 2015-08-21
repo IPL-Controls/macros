@@ -1,6 +1,6 @@
 // Select the file directories for the images to be corrected
 // and the correction images.
-// by AM
+// by AM who doesn't know shit
 
 macro "dark_flat_cor" {
 
