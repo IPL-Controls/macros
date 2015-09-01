@@ -1,6 +1,16 @@
 // Select the file directories for the images to be corrected
 // and the correction images.
-// by AM who doesn't know shit
+/* 
+ * Makes tiff stacks in batch mode.
+ *  
+ *  __author__			=	'Alejandro Morales'
+ *  __status__          =   "stable"
+ *  __date__            =   "8/31/15"
+ *  __version__         =   "1.0"
+ *  __to-do__			=   
+ *  __update-log__		= 	8/24/15: First time push
+ *  						8/31/15: Updated the user interface
+ */
 
 macro "dark_flat_cor" {
 
@@ -34,12 +44,12 @@ run("Images to Stack", "name=DarkStack title=[] use");
 run("Z Project...", "projection=[Average Intensity]");
 darkID = getImageID();
 close("DarkStack");
-save(darkdir + "average_" + substring(darklist[0], 0, darklist.length-4));
+save(darkdir + "average_darkfield");
 selectWindow("FlatStack");
 run("Z Project...", "projection=[Average Intensity]");
 flatID = getImageID();
 close("FlatStack");
-save(flatdir + "average_" + substring(flatlist[0], 0, flatlist.length-4));
+save(flatdir + "average_flatfield);
 imageCalculator("subtract create 32-bit", flatID, darkID);
 correctedflatID = getImageID();
 selectImage(flatID);
