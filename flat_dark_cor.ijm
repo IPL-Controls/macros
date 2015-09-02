@@ -1,14 +1,16 @@
-/* 
- * Dark field and flat field correction.
+/* Dark field and flat field correction.
+ * 
+ * Report any bugs or questions to alegmoralesm@gmail.com
  *  
  *  __author__			=	'Alejandro Morales'
- *  __status__          =   "stable"
+ *  __status__          =   "stable" 
  *  __date__            =   "8/31/15"
- *  __version__         =   "1.0"
- *  __to-do__			=   work on error checking
+ *  __version__         =   "2.0"
+ *  __to-do__			=   work on error checking, 
  *  __update-log__		= 	8/24/15: First time push
  *  						8/31/15: Updated the user interface
  *  						9/1/15: Completed all four options and fully commented 
+ *  						9/2/15: Updated the order of the commands and streamlined the code
  */
 
 macro "dark_flat_cor" {
@@ -19,6 +21,8 @@ Dialog.addRadioButtonGroup("Choose correction", corrarray 2, 1, "Dark Correction
 Dialog.show();
 corrtype = Dialog.getRadioButton();
 
+setBatchMode("exit and display"); // Reveals any hidden images
+run("Close All"); // Closes all open figures
 setBatchMode(true); // Runs the process in the background
 
 // Get the original file lists inside of the respective directory.
@@ -30,32 +34,39 @@ darklist = getFileList(darkdir);
 
 // Get the flat field file lists inside of the respective directory and generate 
 // the average flat field file
+if(corrtype == corrarray[0] || corrtype == corrarray[1]) {
+	exptdir = getDirectory("Choose the correction export folder");
+}
+
+//start = getTime();
+for(i=0; i<darklist.length; i++){
+	open(darkdir+darklist[i]);
+}
+run("Images to Stack", "name=DarkStack title=[] use");
+
 if(corrtype == corrarray[1] || corrtype == corrarray[3]) {
 	flatdir = getDirectory("Choose the flat field folder");
-    flatlist = getFileList(flatdir);
-    for(i=0; i<flatlist.length; i++){
-		open(flatdir+flatlist[i]);
-	}
+	//start = getTime();
+	flatlist = getFileList(flatdir);
+    	for(i=0; i<flatlist.length; i++){
+			open(flatdir+flatlist[i]);
+			}
 	run("Images to Stack", "name=FlatStack title=[] use");
 	selectWindow("FlatStack");
  	run("Z Project...", "projection=[Average Intensity]");
 	flatID = getImageID();
 	close("FlatStack");
-	save(flatdir + "average_flatfield);
+	save(flatdir + "average_flatfield.tif");
 } 
 
-exptdir = getDirectory("Choose the correction export folder");
-
-for(i=0; i<darklist.length; i++){
-	open(darkdir+darklist[i]);
-}
-run("Images to Stack", "name=DarkStack title=[] use");
+selectWindow("DarkStack");
 run("Z Project...", "projection=[Average Intensity]");
 darkID = getImageID();
 close("DarkStack");
-save(darkdir + "average_darkfield");
+save(darkdir + "average_darkfield.tif");
 
 // Performs the flat field correction 
+if (corrtype == corrarray[0] || corrtype == corrarray[1]) {
 if (corrtype == corrarray[1]) {
 imageCalculator("subtract create 32-bit", flatID, darkID);
 correctedflatID = getImageID();
@@ -77,6 +88,7 @@ selectImage(blankimageID);
 close();
 selectImage(correctedflatID);
 close();
+}
 for(i=0; i<mainlist.length; i++){
 	if (!endsWith(mainlist[i], "/")) {
 	showProgress(i, mainlist.length);
@@ -86,18 +98,24 @@ for(i=0; i<mainlist.length; i++){
 	darkcorrimage = getImageID();
 	selectImage(imageID);
     close();
+	if(corrtype == corrarray[1]) {
 	imageCalculator("divide 32-bit", darkcorrimage, normcorrectedflatID);
-    //if(corrtype == corrarray[1]) {
-    //save(exptdir + "flatdarkcorr" + mainlist[i]);
-    //}
-    save(exptdir + "flatdarkcorr" + mainlist[i]);
+	save(exptdir + "flatdarkcorr_" + mainlist[i]);
     close();
+    }
+    if(corrtype == corrarray[0]){
+    selectImage(darkcorrimage);
+    save(exptdir + "darkcorr_" + mainlist[i]);
+    close();
+    }
 	}
+}
+if(corrtype == corrarray[1]) {
+selectImage(normcorrectedflatID);
+close();
 }
 }
 selectImage(darkID);
 close();
-selectImage(normcorrectedflatID);
-close();
-print((getTime()-start)/1000 + " seconds");
+//print((getTime()-start)/1000 + " seconds");
 }

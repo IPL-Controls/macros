@@ -6,7 +6,7 @@
  *  __date__            =   "9/1/15"
  *  __version__         =   "1.0"
  *  __to-do__			=   
- *  __update-log__		= 	
+ *  __update-log__		= 	9/2/15: Changed the save commands to copy
  */
 
 // Select the file directory for the DICOM images to be sorted from
