@@ -10,21 +10,24 @@
  */
 
 // Select the file directory for the DICOM images to be sorted from
-file = File.openDialog("Choose file");
-dir = File.directory;
+/* file = File.openDialog("Choose file");
+dir = File.directory;*/
+dir = getDirectory("Choose folder with DICOM files");
 list = getFileList(dir);
+
 // Select the new file directory for the DICOM images to be saved
 newdir = getDirectory("Choose output folder");
+
 setBatchMode(true); // runs the process in the background
 	
 	for (i=0; i< list.length; i++) {  
 		// Iterates through all the DICOM files in the folder
+		// and copies them to the new folder
 		if(endsWith(list[i], "dcm")) {
-		open(dir+"\\"+list[i]);
-        path = newdir + "\\" +list[i];
+		path = dir + list[i];
+		newpath = newdir + list[i];
         showProgress(i, list.length);
-        run("Save", "save=[path]");
-        close();
+        File.copy(path,newpath);
 		}
 	}
 	
