@@ -311,6 +311,10 @@ macro "Save As JPEG... [j]" {
 	saveAs("Jpeg");
 }
 
+macro "DarkFlatCorr Action Tool - Cf00T0b10DT8b10FTeb10C" {
+	runMacro(getDirectory("macros") + "flat_dark_cor.ijm");
+}
+
 macro "Save Inverted FITS" {
 	run("Flip Vertically");
 	run("FITS...", "");
