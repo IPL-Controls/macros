@@ -3,10 +3,12 @@
  * Report any bugs or questions to alegmoralesm@gmail.com
  *  
  *  __author__			=	'Alejandro Morales'
- *  __status__          =   "stable" 
+ *  __status__          =   "stable"
+ 
  *  __date__            =   "8/31/15"
  *  __version__         =   "2.0"
- *  __to-do__			=   work on error checking, 
+ *  __to-do__			=   work on error checking
+, 
  *  __update-log__		= 	8/24/15: First time push
  *  						8/31/15: Updated the user interface
  *  						9/1/15: Completed all four options and fully commented 
@@ -32,6 +34,10 @@ mainlist = getFileList(maindir);
 darkdir = getDirectory("Choose the dark field folder");
 darklist = getFileList(darkdir);
 
+if(corrtype == corrarray[1] || corrtype == corrarray[3]) {
+	flatdir = getDirectory("Choose the flat field folder");
+}
+
 // Get the flat field file lists inside of the respective directory and generate 
 // the average flat field file
 if(corrtype == corrarray[0] || corrtype == corrarray[1]) {
@@ -45,7 +51,7 @@ for(i=0; i<darklist.length; i++){
 run("Images to Stack", "name=DarkStack title=[] use");
 
 if(corrtype == corrarray[1] || corrtype == corrarray[3]) {
-	flatdir = getDirectory("Choose the flat field folder");
+	//flatdir = getDirectory("Choose the flat field folder");
 	//start = getTime();
 	flatlist = getFileList(flatdir);
     	for(i=0; i<flatlist.length; i++){
