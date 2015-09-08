@@ -209,7 +209,7 @@ macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	}
 }
 // for EPICS AD Viewer
-macro "EPICS Area Detector Viewer Action Tool - Cf00B03T0b12ATab12D" { 
+macro "EPICS Area Detector Viewer Action Tool - Cf00F24faF6272Cfffo6577C00fo8733" { 
 		run("EPICS AD Viewer", "");
 }
 // for TIFF tags
@@ -233,7 +233,7 @@ macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" {
 		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
 	}
 	else if (cmd=="Dark-Flat Correction") {
-		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
+		runMacro(getDirectory("macros") + "flat_dark_cor.ijm");
 	}
 	else if (cmd!="-") {
 		run(cmd);
@@ -309,10 +309,6 @@ macro "Save As JPEG... [j]" {
 	quality = getNumber("JPEG quality (0-100):", quality);
 	run("Input/Output...", "jpeg="+quality);
 	saveAs("Jpeg");
-}
-
-macro "DarkFlatCorr Action Tool - Cf00T0b10DT8b10FTeb10C" {
-	runMacro(getDirectory("macros") + "flat_dark_cor.ijm");
 }
 
 macro "Save Inverted FITS" {
