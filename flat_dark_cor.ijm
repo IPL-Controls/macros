@@ -46,7 +46,7 @@ if(corrtype == corrarray[0] || corrtype == corrarray[1]) {
 	exptdir = getDirectory("Choose the correction export folder");
 }
 
-start = getTime();
+// start = getTime();
 
 //Create the darkfield stack
 for(i=0; i<darklist.length; i++)
@@ -157,5 +157,5 @@ if(averageValue == 1)
 	close("exptStack");
 }
 	
-print((getTime()-start)/1000 + " seconds");
+// print((getTime()-start)/1000 + " seconds");
 }
