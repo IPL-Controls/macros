@@ -6,7 +6,7 @@
  *  __bug fixes__		= 	'Sami Znati' 
  *  __status__          =   "stable" 
 
- *  __date__            =   "8/31/15"
+ *  __date__            =   "9/8/15"
  *  __version__         =   "2.0"
  *  __to-do__			=   work on error checking, 
  *  __update-log__		= 	8/24/15: First time push
@@ -20,7 +20,9 @@ macro "dark_flat_cor" {
 Dialog.create("Dark Flat Correction");
 corrarray = newArray("Dark Correction", "Dark + Flat Correction", "Average Dark File Only", "Average Flat + Dark File Only");
 Dialog.addRadioButtonGroup("Choose correction", corrarray 2, 1, "Dark Correction");
+Dialog.addCheckBox("Average corrected images", 0)
 Dialog.show();
+averageValue = dialog.getCheckBox();
 corrtype = Dialog.getRadioButton();
 
 setBatchMode("exit and display"); // Reveals any hidden images
@@ -142,7 +144,7 @@ if(corrtype == corrarray[1])
 selectImage(darkID);
 close();
 
-if(corrtype == corrarray[0] || corrtype == corrarray[1])
+if(averageValue == 1)
 {
 	exptlist = getFileList(exptdir);
 	for(i=0; i<exptlist.length; i++)
