@@ -20,7 +20,7 @@ macro "dark_flat_cor" {
 Dialog.create("Dark Flat Correction");
 corrarray = newArray("Dark Correction", "Dark + Flat Correction", "Average Dark File Only", "Average Flat + Dark File Only");
 Dialog.addRadioButtonGroup("Choose correction", corrarray 2, 1, "Dark Correction");
-Dialog.addCheckbox("Average corrected images", 0)
+Dialog.addCheckbox("Average corrected images", 0);
 Dialog.show();
 averageValue = Dialog.getCheckbox();
 corrtype = Dialog.getRadioButton();
