@@ -1,0 +1,17 @@
+//Author: Sami Znati - National Institutes of Health
+
+//Make sure the first ROI is selected before running the script
+dir = getDirectory("Where would you like to save the ROIs?");
+
+num = roiManager("count");
+start = roiManager("index");
+for(n=start; n < num; n++)
+{
+	directory = dir + "ROI_" + n + ".roi";
+	roiManager("Select", n);
+	saveAs("Selection", directory);
+}
+total = num - start;
+Dialog.create("Success");
+Dialog.addMessage("Saved " + total + "ROIs");
+Dialog.show();
