@@ -9,10 +9,9 @@
  *  __update-log__		= 	
  */
 
-
 var mean_slice_list = newArray();
 
-macro "make_fringe_map" {
+macro "moire_carpet" {
 	image_stack = File.openDialog("Select Stack");
 	path = File.directory;
     if (endsWith(image_stack, ".tif") || endsWith(image_stack, ".tiff")) { 

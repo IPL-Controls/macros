@@ -1,0 +1,145 @@
+/*Author: Sami Znati          10/20/2015
+ *This macro opens a stack and saves each slice as a seperate file and allows you to rename each file, or apend a block of text to each existing file. Basically the same
+ *as the currently existing option save as... image sequence... This script, however, allows you to preserve the names from the labels of each stack slice.
+*/
+setBatchMode(true);
+Dialog.create("Naming");
+nameArray = newArray("Append to existing", "Enter a new name")
+Dialog.addRadioButtonGroup("", nameArray, 1, 2, "Append to existing");
+Dialog.show();
+naming=Dialog.getRadioButton();
+stack = File.openDialog("Select the stack file");
+new_folder = getDirectory("Select folder for export");
+name = File.getName(stack);
+//print(stack);
+//print(name);
+
+nameEnd = lastIndexOf(name, ".tif")
+nameTerm = substring(name, 0, nameEnd)
+
+open(stack);
+num_slices = nSlices();
+//print(num_slices);
+//print(naming);
+if(naming==nameArray[0])
+{
+	appChoice = newArray("Yes","No");
+	Dialog.create("Prepend");
+	Dialog.addChoice("Append text to the existing names?", appChoice, "yes");
+	Dialog.show();
+	yn=Dialog.getChoice();
+	//print(yn);
+	if(yn==appChoice[0])
+	{
+		Dialog.create("File Name Appendium");
+		Dialog.addMessage("Append what?");
+		Dialog.addString("", "");
+		Dialog.addCheckbox("Prepend?", 1)
+		Dialog.show();
+		append = Dialog.getString();
+		prepend = Dialog.getCheckbox();
+	}
+	
+	Dialog.create("Numerals");
+	Dialog.addChoice("Append Iterated Numerals?", appChoice, "No");
+	Dialog.show();
+	yesno=Dialog.getChoice();
+	if(prepend == 0)
+	{
+		open(stack);
+		for(i=1; i<=num_slices; i++)
+		{
+			setSlice(i);
+			//print(i);
+			sliceLabel = getMetadata("Label");
+			//print(sliceLabel);
+			labelEnd = indexOf(sliceLabel, ".tif");
+			labelName = substring(sliceLabel, 0, labelEnd);
+			//print(labelName);
+			if(yesno==appChoice[0])
+			{
+				if(i<10)
+				{
+					newName = labelName + append + "_00" + i + ".tif";
+				} else if(i<100)
+				{
+					newName = labelName + append + "_0" + i + ".tif";
+				} else
+				{
+					newName = labelName + append + "_" + i + ".tif";
+				}
+			} else
+			{
+				newName = labelName + append + ".tif";
+			}		
+			//print(newName);
+			run("Duplicate...", "title=newName");
+			saveAs("tiff", new_folder  + "\" + newName);
+			close();
+		}
+	} else
+	{
+		open(stack);
+		for(i=1; i<=num_slices; i++)
+		{
+			print(i);
+			setSlice(i);
+			sliceLabel = getMetadata("Label");
+			//print(sliceLabel);
+			labelEnd = indexOf(sliceLabel, ".tif");
+			labelName = substring(sliceLabel, 0, labelEnd);
+			//print(labelName);
+			if(yesno==appChoice[0])
+			{
+				if(i<10)
+				{
+					newName = append + labelName + "_00" + i + ".tif";
+				} else if(i<100)
+				{
+					newName =  append + labelName + "_0" + i + ".tif";
+				} else
+				{
+					newName = append + labelName +  "_" + i + ".tif";
+				}
+			} else
+			{
+				newName = append + labelName +  ".tif";
+			}		
+			//print("newName is " + newName);
+			saveName = new_folder + newName;
+			//print("saveName is " + saveName);
+			run("Duplicate...", "title=newName");
+			saveAs("tiff", saveName);
+			close();
+		}
+	}		
+} else
+{
+	Dialog.create("File Name Appendium");
+	Dialog.addMessage("Enter the new filename.");
+	Dialog.addString("Filename:", nameTerm);
+	Dialog.show();
+	newName=Dialog.getString();
+	
+	open(stack)
+	for(i=1; i<=num_slices; i++)
+	{
+		setSlice(i);
+		//print(i);
+		
+		if(i<10)
+		{
+			newName = nameTerm + "_00" + i + ".tif";
+		} else if(i<100)
+		{
+			newName = nameTerm + "_0" + i + ".tif";
+		} else
+		{
+			newName = nameTerm + "_" + i + ".tif";
+		}
+		print(newName);
+		run("Duplicate...", "title=newName");
+		saveAs("tiff", new_folder + newName);
+		close();
+	}
+}
