@@ -1,4 +1,4 @@
-* 
+/* 
  * Aligns phosphor detector in Rz and Ry axis.
  *  
  *  __author__			=	'Alejandro Morales'
