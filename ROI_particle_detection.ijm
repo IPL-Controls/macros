@@ -73,20 +73,19 @@ roiManager("Show All with Labels");
 setTool("rectangle");
 waitForUser("Select main ROI");
 setBatchMode("hide");
-p = 0;
+//p = 0;
 
 for (i=0; i<roiManager("count"); i++)
 { 
 	if (!Roi.contains(x[i],y[i])) 
 		{
-			a[p] = i;
-			p = p + 1; 
+			a = Array.concat(a,i); 
 		}
 }
 
 roiManager("Deselect");
 roiManager("Select",a);
-roiManager("Select",a[p]);
+//roiManager("Select",a[p]);
 roiManager("Delete");
 
 for (i=1; i<=roiManager("count"); i++)
