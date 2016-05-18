@@ -19,11 +19,11 @@ file = File.openDialog("Open the refDFCOR_***.tif file");
 File.makeDirectory(File.getParent(file) + "\\PhaseTest");
 openpath = File.getParent(file) + "\\PhaseTest\\";
 
-for (i=0; i<100; i++) 
+for (i=0; i<50; i++) 
 {
 setBatchMode(true);
 open(file);
-makeRectangle(0, 355+i*1, 1634, 275);
+makeRectangle(0, 355+i*1, 1634, 287);
 run("Crop");
 run("Duplicate...", " ");
 run("Duplicate...", " ");
