@@ -22,7 +22,7 @@ openpath = File.getParent(file) + "\\PhaseTest\\";
 setBatchMode(true)
 for (i=0; i<50; i++) 
 {
-;
+run("Close All");
 open(file);
 makeRectangle(0, 355+i*1, 1634, 287);
 run("Crop");
