@@ -15,16 +15,18 @@
  *  						
  */
 
+
 file = File.openDialog("Open the refDFCOR_***.tif file");
 File.makeDirectory(File.getParent(file) + "\\PhaseTest");
 openpath = File.getParent(file) + "\\PhaseTest\\";
+filename = 415;
 
-setBatchMode(true)
+setBatchMode(true);
 for (i=0; i<50; i++) 
 {
 run("Close All");
 open(file);
-makeRectangle(0, 355+i*1, 1634, 287);
+makeRectangle(0, filename +i*1, 1634, 180);
 run("Crop");
 run("Duplicate...", " ");
 run("Duplicate...", " ");
@@ -32,11 +34,11 @@ run("Duplicate...", " ");
 run("Duplicate...", " ");
 run("Images to Stack", "name=Stack title=[] use");
 run("Make Montage...", "columns=1 rows=5 scale=1");
-save(openpath + toString(355+i*1) + "y.tif");
+save(openpath + toString(filename+i*1) + "y_" + toString(i) + ".tif");
 run("Close All");
 }
 
 setBatchMode(false);
-run("Image Sequence...", "open=[" + openpath + "355y.tif"+ "] sort");
+run("Image Sequence...", "open=[" + openpath + toString(filename) + "y.tif"+ "] sort");
 run("Set Scale...", "distance=0 known=0 pixel=1 unit=pixel global");
 run("Enhance Contrast", "saturated=0.35");
