@@ -20,11 +20,11 @@ file = File.openDialog("Open the refDFCOR_***.tif file");
 File.makeDirectory(File.getParent(file) + "\\PhaseTest");
 openpath = File.getParent(file) + "\\PhaseTest\\";
 filename = 415;
+run("Close All");
 
 setBatchMode(true);
 for (i=0; i<50; i++) 
 {
-run("Close All");
 open(file);
 makeRectangle(0, filename +i*1, 1634, 180);
 run("Crop");
