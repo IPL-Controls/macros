@@ -14,12 +14,18 @@
  *  						
  *  						
  */
- 
- dir = getDirectory("Choose the images folder");
+dir = getDirectory("Choose the images folder");
 filelist = getFileList(dir);
 
+Dialog.create("Quick file rename");
+Dialog.addString("Original characters","");
+Dialog.addString("New characters","")
+Dialog.show
+oldchar = Dialog.getString();
+newchar = Dialog.getString();
+ 
 for(i=0; i<filelist.length; i++)
 	{
-		newstring = replace(filelist[i],"pt2","pt5");
+		newstring = replace(filelist[i],oldchar,newchar);
 		File.rename(dir + filelist[i], dir + newstring);
 	}
