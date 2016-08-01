@@ -1,5 +1,8 @@
-
-macro "mirror_edge_abs"{
+////////////////////////////////////////////////////////////////
+// Click on a spot to move this spot to the center of the image. 
+// 2/24/2016
+////////////////////////////////////////////////////////////////
+macro "move_Y_visual"{
 
 ////////////////////////////////////////////////////////////////////////////////
 //Set up variables and prep image
@@ -28,8 +31,9 @@ macro "mirror_edge_abs"{
 	getSelectionCoordinates(x,y);
 	edgeabsx = y[0]-round(imgheight/2);
 	List.set("edgeabsx",edgeabsx);
-	
 
+	
+/*
 	waitForUser("Select g"+grtnum+" reflection with a point");
 	getSelectionCoordinates(x,y);
 	reflabsx = y[0]-round(imgheight/2); 
@@ -37,13 +41,13 @@ macro "mirror_edge_abs"{
 
 	print("edgeabsx is " + toString(edgeabsx, 2));
 	print("reflabsx is " + toString(reflabsx, 2));
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 //Calculate rx y inci and move motors
 
 	//Calculate rx y inci angle and update the list
-	List.setList(runMacro("calc_RX_Y_incAngl", List.getList)); 
+	List.setList(runMacro("calc_Y", List.getList)); 
 	//Prompt to move motors and update the list
 	List.setList(runMacro("set_motors", List.getList));
 
@@ -61,6 +65,6 @@ macro "mirror_edge_abs"{
 
 	//here would be good place to auto save log to file if desired
 	
-	outstr = "null";
-	return outstr;
+	//outstr = "null";
+	//return outstr;
 }
