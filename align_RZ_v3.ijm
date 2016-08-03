@@ -46,7 +46,7 @@ ylab = newArray(npts);
 for(i=0;i<npts;i++) {
 	scalef=ss_g_dist/(absyvals[i]*cam_pixsize*cos_phos+ss_phos_dist);
 	xlab[i]=absxvals[i]*cam_pixsize*scalef ; //in mm
-	ylab[i]=absyvals[i]*cam_pixsize*(-sin_phos)*scalef ; //in mm
+	ylab[i]=absyvals[i]*cam_pixsize*(sin_phos)*scalef ; //in mm
 }	
 //Calculate a slope (d ylab/d xlab) by linear fitting;
 Fit.doFit("Straight Line", xlab, ylab);

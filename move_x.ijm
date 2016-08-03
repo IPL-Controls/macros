@@ -32,6 +32,11 @@ macro "move_x"{
 	if(selectionType()==0){
 		getSelectionBounds(x0,y0,width,height);
 		distFromCenter=imageCenter-(x0+(width/2));
+		
+/*		print("x0,y0 " + x0, y0);
+		print("width" + width);
+		print("imageCenter " + imageCenter); 
+*/	
 	}
 
 	L_p=ss_phos_dist/ss_g_dist;
