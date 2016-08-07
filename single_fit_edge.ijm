@@ -46,7 +46,7 @@ macro "single_fit_edge" {
 		lsf_edge = arr[0];
     	fit_func = arr[1];
 	}
-	imgname = getTitle(); 
+	selectImage(imgname);
 	// Remove scaling
 	run("Set Scale...", "distance=0 global");
 	// Find percent roi selected
@@ -104,27 +104,19 @@ macro "single_fit_edge" {
     if(rsqpos > rsqneg) {
     	writeFile(file_lsf, x, deriv);
     	Fit.doFit("Gaussian", x, deriv);
-    	off_g = Fit.p(0);
-    	mean_g = Fit.p(2);
-    	peak_g = Fit.p(1) - Fit.p(0);
-    	width_g = Fit.p(3);
-    	// LSF fwhm
-    	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    	// This is the contrast (I_max - I_min) in terms of ESF step height 
-    	area_g = sqrt(2 * PI) * peak_g * width_g;
     }
 	else {
 		writeFile(file_lsf, x, derivneg);	
     	Fit.doFit("Gaussian", x, derivneg);
-    	off_g = Fit.p(0);
-    	mean_g = Fit.p(2);
-    	peak_g = Fit.p(1) - Fit.p(0);
-    	width_g = Fit.p(3);
-    	// LSF fwhm
-    	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    	// This is the contrast (I_max - I_min) in terms of ESF step height 
-    	area_g = sqrt(2 * PI) * peak_g * width_g;
-    }           
+    } 
+    off_g = Fit.p(0);
+    mean_g = Fit.p(2);
+    peak_g = Fit.p(1) - Fit.p(0);
+    width_g = Fit.p(3);
+    // LSF fwhm
+    FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
+    // This is the contrast (I_max - I_min) in terms of ESF step height 
+    area_g = sqrt(2 * PI) * peak_g * width_g;          
     if (fit_func == "Gaussian") {
     	Fit.plot();
     	FWHM = FWHM_g;

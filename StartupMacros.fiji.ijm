@@ -191,7 +191,7 @@ macro "Flood Fill Tool - C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb
 }
 */
 var aCmds = newMenu("Alignment Menu Tool",
-	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "Align grating Rz", "Align phosphor Rx Rz", "-"));
+	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "Align grating x", "Align grating Rz", "Align phosphor Rx Rz", "-"));
 
 macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	cmd = getArgument();
@@ -200,6 +200,9 @@ macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	}
 	else if (cmd=="Find Rx and Y of all mirrors") {
 		runMacro(getDirectory("macros") + "calc_RX_Y_incAngl.ijm");
+	}
+	else if (cmd=="Align grating x") {
+		runMacro(getDirectory("macros") + "move_x.ijm");
 	}
 	else if (cmd=="Align grating Rz") {
 		runMacro(getDirectory("macros") + "align_RZ_v3.ijm");
@@ -222,7 +225,7 @@ macro "EPICS Tags Action Tool - Cf00D22D23D24D25D26D27D32D33D34D35D36D37D38D42D4
 }
 // for ccd eval
 var cCmds = newMenu("CCD Menu Tool",
-	newArray("Stack in Batch Mode", "Crop Images", "Find Edge Resolution", "Dark-Flat Correction", "-"));
+	newArray("Stack in Batch Mode", "Crop Images", "Find Edge Resolution", "Fit Profile", "Dark-Flat Correction", "-"));
 	
 macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" { 
 	cmd = getArgument();
@@ -234,6 +237,9 @@ macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" {
 	}
 	else if (cmd=="Find Edge Resolution") {
 		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
+	}
+	else if (cmd=="Fit Profile") {
+		runMacro(getDirectory("macros") + "stack_fit_profile.ijm");
 	}
 	else if (cmd=="Dark-Flat Correction") {
 		runMacro(getDirectory("macros") + "flat_dark_cor.ijm");

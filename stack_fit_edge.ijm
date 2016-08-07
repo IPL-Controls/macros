@@ -20,7 +20,7 @@
  */
  
 // Global scan ioc pv name 
-var SCAN_IOC = "IPL:SCAN-1:scan1";
+var SCAN_IOC = "HPFI:SCAN:scan1";
 macro "stack_fit_edge" {
 	fit_choice = newArray("Gaussian", "Lorentzian");
     edge_choice = newArray("Horizontal", "Vertical");
@@ -128,6 +128,8 @@ macro "stack_fit_edge" {
     	// no stack condition
     	d = runMacro("single_fit_edge", args);
     }
+    setBatchMode("exit and display");
+	waitForUser("Information", " Edge Fit Completed");
 }
 // Seperate plotting routine for 2nd order fitting
 function plot3d(z, val) {
