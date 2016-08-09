@@ -35,8 +35,8 @@ macro "single_fit_profile" {
     	fit_func = arr[1];
 	}
 	selectImage(imgname);
-	if selectionType() != 0 || selectionType() != 5 || selectionType() != 7 {
-		
+	if (!(selectionType() == 0 || selectionType() == 5 || selectionType() == 7)) {
+		exit("Selection must be a line or a rectangle");
 	}
 	// Remove scaling
 	run("Set Scale...", "distance=0 global");

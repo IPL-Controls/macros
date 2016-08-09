@@ -22,11 +22,13 @@ macro "single_fringe_period" {
 	args = getArgument();
 	freq_dim = newArray("x", "y");
   	Dialog.create("Main Menu");
-	Dialog.addNumber("Pixel Size:", 47.733, 3, 6,"um");
-	Dialog.addChoice("Fringe Frequency axis:",freq_dim, "x");
+	Dialog.addNumber("Pixel Size:", 47.733, 3, 6, "um");
+	Dialog.addChoice("Fringe Frequency axis:", freq_dim, "x");
+	Dialog.addNumber("Tolerance:", 3, 3, 6, "");
   	Dialog.show();
   	pixel_size = Dialog.getNumber();
   	freq_dim_choice  = Dialog.getChoice();
+  	tolerance = Dialog.getNumber();
   	fringe_period = newArray(nSlices)
 	for (i = 1; i <= nSlices; i++) {
 		// Remove scaling
@@ -50,10 +52,10 @@ macro "single_fringe_period" {
 		// return location of maximum
 		max_loc = Array.findMaxima(y, tolerance);
 		Array.sort(max_loc);
-	//	Array.print(max_loc);
+		Array.print(max_loc);
 		temp_period = max_loc[lengthOf(max_loc) - 1] - max_loc[0];
-		period = temp_period /(0.5*lengthOf(max_loc));
-		print (period);
+		period = temp_period /(lengthOf(max_loc) - 1);
+		print (period * pixel_size * 1E-3);
 		max_loc = newArray();
 	}
 // Makes the plots looks fancier
