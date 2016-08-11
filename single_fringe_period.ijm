@@ -22,12 +22,12 @@ macro "single_fringe_period" {
 	args = getArgument();
 	freq_dim = newArray("x", "y");
   	Dialog.create("Main Menu");
-	Dialog.addNumber("Pixel Size:", 47.733, 3, 6, "um");
+	Dialog.addNumber("Pixel Size:", 1, 3, 6, "mm");
 	Dialog.addChoice("Fringe Frequency axis:", freq_dim, "x");
 	Dialog.addNumber("Tolerance:", 3, 3, 6, "");
   	Dialog.show();
   	pixel_size = Dialog.getNumber();
-  	freq_dim_choice  = Dialog.getChoice();
+  	dim_choice  = Dialog.getChoice();
   	tolerance = Dialog.getNumber();
   	fringe_period = newArray(nSlices)
 	for (i = 1; i <= nSlices; i++) {
@@ -40,10 +40,10 @@ macro "single_fringe_period" {
 			makeRectangle(0, 0, getWidth(), getHeight());
 		}
     	// Plot x profile, get values and close profile
-		if (freq_dim_choice == "x") {
+		if (dim_choice == "x") {
 			setKeyDown("ctrl");
 		}
-		else if (freq_dim_choice == "y") {
+		else if (dim_choice == "y") {
     		setKeyDown("alt"); 
 		}
 		run("Plot Profile");
@@ -55,7 +55,7 @@ macro "single_fringe_period" {
 		Array.print(max_loc);
 		temp_period = max_loc[lengthOf(max_loc) - 1] - max_loc[0];
 		period = temp_period /(lengthOf(max_loc) - 1);
-		print (period * pixel_size * 1E-3);
+		print (period * pixel_size);
 		max_loc = newArray();
 	}
 // Makes the plots looks fancier
