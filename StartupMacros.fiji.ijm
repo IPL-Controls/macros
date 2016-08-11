@@ -225,7 +225,7 @@ macro "EPICS Tags Action Tool - Cf00D22D23D24D25D26D27D32D33D34D35D36D37D38D42D4
 }
 // for ccd eval
 var cCmds = newMenu("CCD Menu Tool",
-	newArray("Stack in Batch Mode", "Crop Images", "Find Edge Resolution", "Fit Profile", "Dark-Flat Correction", "-"));
+	newArray("Stack in Batch Mode", "Crop Images", "Plot Z-axis Profile", "Find Resolution", "Dark-Flat Correction", "-"));
 	
 macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" { 
 	cmd = getArgument();
@@ -235,11 +235,11 @@ macro "CCD Menu Tool - Cf00B03T0b10CT7b10CTeb10D" {
 	else if (cmd=="Crop Images") {
 		runMacro(getDirectory("macros") + "crop_images.ijm");
 	}
-	else if (cmd=="Find Edge Resolution") {
-		runMacro(getDirectory("macros") + "stack_fit_edge.ijm");
+	else if (cmd == "Plot Z-axis Profile") {
+		runMacro(getDirectory("macros") + "plot_z-axis_profile.ijm");
 	}
-	else if (cmd=="Fit Profile") {
-		runMacro(getDirectory("macros") + "stack_fit_profile.ijm");
+	else if (cmd=="Find Resolution") {
+		runMacro(getDirectory("macros") + "stack_find_resolution.ijm");
 	}
 	else if (cmd=="Dark-Flat Correction") {
 		runMacro(getDirectory("macros") + "flat_dark_cor.ijm");
