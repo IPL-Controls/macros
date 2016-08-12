@@ -4,10 +4,10 @@
  *  single_edge_horizontal.ijm and single_fit_edge. Asks for profile direction. 
  *  Works when image is open and roi is selected.
  *  
- *  __author__			=	'Alireza Panna'
- *  __status__          =   "stable"
- *  __date__            =   "2/27/15"
- *  __version__         =   "2.0"
+ *  __author__			=	Alireza Panna
+ *  __status__          =   stable
+ *  __date__            =   2/27/15
+ *  __version__         =   2.0
  *  __to-do__			=	cauchy and pseudo voigt fits are computationally expensive in this iteration. Need to find a way			   
  *  						to make these fits faster.
  *  __update-log__		= 	3/08/15: Now returns contrast information (edge response height) as area under gaussian LSF curve
@@ -23,24 +23,16 @@
  *  						8/10/16: Added pseudo voigt fit function as an option for fitting. This macro also fits generic profiles.
  *  						         and is not limited to derivative of edge profile fitting i.e. LSF fitting anymore Update version
  *  						         to 2.0 single_fit_edge is now deprecated.
+ *  					    8/11/16: Changed Lorentzian and Pseudo-Voigt fit function equation to accomodate for y offset. Lorentzian 
+ *  					    		 guess parameters are not estimated from the gaussian fit anymore, so that the gaussian fit is not 	
+ *  					    		 performed everytime the user selects Lorentzian fitting. 
  */
  
 requires("1.49i");
-// Define the Lorentzian fit function to use
-/* a = Amplitude
- * b = mean  
- * c = FWHM
-*/ 
-var Lorentzian = "y = (a/4)*(c*c)*(1/((x-b)*(x-b)+(c/2)*(c/2)))";
-/* a = offset
- * b = amplitude  
- * c = FWHM of cauchy
- * d = mean
- * e = FWHM of normal
- * 
-*/
+/* Lorentzian fit function: a = Offset b = Peak c = Mean d = FWHM */ 
+var Lorentzian = "y=a+(b-a)*(d*d/4)*(1/((x-c)*(x-c)+(d/2)*(d/2)))";
 
-macro "single_fit_profile" {
+macro "single_find_resolution" {
 	imgname = getTitle(); 
 	// remove .tif
 	imgname_split = split(imgname,".");
@@ -93,7 +85,7 @@ macro "single_fit_profile" {
 	close();
 	npts = x.length;
 	if (fit_type == "Profile") {
-		//Do linear baseline correction.
+		// baseline correction via linear regression
     	x0=(x[0]+x[1]+x[2]+x[3]+x[4])/5;
     	y0=(y[0]+y[1]+y[2]+y[3]+y[4])/5;
     	x1=(x[npts-1]+x[npts-2]+x[npts-3]+x[npts-4]+x[npts-5])/5;
@@ -125,7 +117,7 @@ macro "single_fit_profile" {
     	for(i = 1; i < npts - 1; i++) {
     		deriv[i] = (parseFloat(y[i+1]) - parseFloat(y[i-1]))/2;
     	}
-		// Linear baseline correction
+		// baseline correction via linear regression
     	x0 = (x[1] + x[2] + x[3] + x[4])/4;
     	deriv0 = (deriv[1] + deriv[2] + deriv[3] + deriv[4])/4;
     	x1 = (x[npts - 2] + x[npts - 3] + x[npts - 4] + x[npts - 5])/4;
@@ -144,32 +136,51 @@ macro "single_fit_profile" {
 		print(file_lsf, "samples (n)" + "\t" + "Raw LSF (d(DN)/dn)"); 
 		writeFile(file_lsf, x, y_corr);
 	}
-    Fit.doFit("Gaussian", x, y_corr);
-    rsqpos=Fit.rSquared();   
-    Fit.doFit("Gaussian", x, ny_corr);
-    rsqneg=Fit.rSquared();
-    if(rsqpos > rsqneg) {
-    	Fit.doFit("Gaussian", x, y_corr);
-    } 
-    else {
-    	Fit.doFit("Gaussian", x, ny_corr);
-    }    
-    off_g = Fit.p(0);
-    mean_g = Fit.p(2);
-    peak_g = Fit.p(1) - Fit.p(0);
-    width_g = Fit.p(3);
-    // profile fwhm
-    FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
-    area_g = sqrt(2 * PI) * peak_g * width_g;           
-    if (fit_func == "Gaussian") {
-    	Fit.plot();
-    	FWHM = FWHM_g;
-    	AREA = abs(area_g);
-    	MEAN = mean_g;
+	// get guess params
+	Array.getStatistics(y_corr, min, max, mean, stdDev);
+	max_y = max;
+	min_y = min;
+	mean_y = mean;
+	Array.getStatistics(x, min, max, mean, stdDev);
+	min_x = min;
+	max_x = max;
+	for (i = 0; i < npts; i++) {
+		if (y_corr[i] == max_y) {
+			xOfmax = x[i];
+		}
 	}
+	width_y = 0.39894*((max_x - min_x)*(mean_y-min_y))/(max_y - min_y + 1e-100);
+	// Gaussian fit routine
+	if (fit_func == "Gaussian" || fit_func == "Pseudo-Voigt") {
+    	Fit.doFit("Gaussian", x, y_corr);
+    	rsqpos=Fit.rSquared();
+    	Fit.doFit("Gaussian", x, ny_corr);
+    	rsqneg=Fit.rSquared();
+    	if(rsqpos > rsqneg) {
+    		Fit.doFit("Gaussian", x, y_corr);
+    	} 
+    	else {
+    		Fit.doFit("Gaussian", x, ny_corr);
+    	}   
+    	off_g = Fit.p(0);
+    	mean_g = Fit.p(2);
+    	peak_g = Fit.p(1) - Fit.p(0);
+    	width_g = Fit.p(3);
+    	// profile fwhm
+    	FWHM_g = 2 * sqrt(2 * log(2)) * width_g;
+    	area_g = sqrt(2 * PI) * peak_g * width_g;           
+    	if (fit_func == "Gaussian") {
+    		Fit.plot();
+    		FWHM = FWHM_g;
+    		AREA = abs(area_g);
+    		MEAN = mean_g;
+		}
+	}
+	// Lorentzian fit routine
 	if (fit_func == "Lorentzian" || fit_func == "Pseudo-Voigt") {
 		// Calculate initial guesses. Currently getting guess from gaussian fit parameters.
-     	initialGuesses = newArray(peak_g, mean_g, FWHM_g);
+		// Since data is baseline subtracted 0 is a good guess for the offset.
+     	initialGuesses = newArray(-5, max_y, xOfmax, 2*sqrt(2*log(2))*width_y);
 		Fit.doFit(Lorentzian, x, y_corr, initialGuesses);
 		rsqpos = Fit.rSquared();
 		Fit.doFit(Lorentzian, x, ny_corr, initialGuesses);
@@ -180,29 +191,31 @@ macro "single_fit_profile" {
     	else {
     		Fit.doFit(Lorentzian, x, ny_corr, initialGuesses);
     	}
-    	peak_l = Fit.p(0);
-    	mean_l = Fit.p(1);
-    	FWHM_l = Fit.p(2);
+    	off_l = Fit.p(0);
+    	peak_l = Fit.p(1) - Fit.p(0);
+    	mean_l = Fit.p(2);
+    	FWHM_l = Fit.p(3);
     	area_l = (abs(peak_l) * abs(FWHM_l)) * ((PI/2));//-atan(-2*mean_l/abs(FWHM_l)));
     	if (fit_func == "Lorentzian") { 
     		Fit.plot();
+    		FWHM = abs(FWHM_l);
+    		AREA = abs(area_l);
+    		MEAN = mean_l;
     	}
-    	FWHM = abs(FWHM_l);
-    	AREA = abs(area_l);
-    	MEAN = mean_l;
 	}
+	//Pseudo-Voigt fit routine
 	if (fit_func == "Pseudo-Voigt") {
-		// Calculate initial guesses. Currently getting guess from gaussian fit parameters.
-		eta =  1.36603*abs(FWHM_l/FWHM_g) - 0.47719*(FWHM_l/FWHM_g)*(FWHM_l/FWHM_g) + 0.11116*abs(FWHM_l/FWHM_g)*abs(FWHM_l/FWHM_g)*abs(FWHM_l/FWHM_g);
-		
+		// Calculate initial guesses. eta is the weight approximation for the combination
+		eta =  1.36603*abs(FWHM_l/FWHM_g) - 0.47719*(FWHM_l/FWHM_g)*(FWHM_l/FWHM_g) + 
+			   0.11116*abs(FWHM_l/FWHM_g)*abs(FWHM_l/FWHM_g)*abs(FWHM_l/FWHM_g);
 		fwhm_v = pow(pow(2*sqrt(2*log(2))*FWHM_g, 5) + 
     			 2.69269*pow(2*sqrt(2*log(2))*FWHM_g, 4)*pow(FWHM_l, 1) + 
     			 2.42843*pow(2*sqrt(2*log(2))*FWHM_g, 3)*pow(FWHM_l, 2) + 
     			 4.47163*pow(2*sqrt(2*log(2))*FWHM_g, 2)*pow(FWHM_l, 3) + 
     			 0.07842*pow(2*sqrt(2*log(2))*FWHM_g, 1)*pow(FWHM_l, 4) + 
     			 pow(FWHM_l , 5), 0.2);
-    	var pseudo_voigt = Lorentzian + "*" + d2s(eta, 9) + "+ (1-" + d2s(eta, 9) + ")*a*exp(-((x-b)*(x-b)*4*log(2))/(c*c))";
-     	initialGuesses = newArray(peak_g, mean_g, fwhm_v, off_g);
+    	var pseudo_voigt = Lorentzian + "*" + d2s(eta, 9) + "+ (1-" + d2s(eta, 9) + ")*((b-a)*exp(-((x-c)*(x-c)*4*log(2))/(d*d)) + a)";
+     	initialGuesses = newArray(0, max_y, xOfmax, fwhm_v);
 		Fit.doFit(pseudo_voigt, x, y_corr, initialGuesses);
 		rsqpos = Fit.rSquared();
 		Fit.doFit(pseudo_voigt, x, ny_corr, initialGuesses);
@@ -214,9 +227,9 @@ macro "single_fit_profile" {
     		Fit.doFit(pseudo_voigt, x, ny_corr, initialGuesses);
     	}    
     	Fit.plot();
-    	peak_v = Fit.p(0);
-    	mean_v = Fit.p(1);
-    	FWHM_v = Fit.p(2); 
+    	peak_v = Fit.p(1) - Fit.p(0);
+    	mean_v = Fit.p(2);
+    	FWHM_v = Fit.p(3); 
     	area_v = abs(eta*area_l + (1-eta)*area_g);
     	FWHM = abs(FWHM_v);
     	AREA = abs(area_v);
