@@ -2,20 +2,21 @@
  * Generic extension of single_find_resolution.ijm to work for a single image or a stack of images. 
  * Works when a stack of images is already open and a roi is selected.
  * 
- * __author_		=	'Alireza Panna'
- * __version__		=	'1.1'
- * __status__   	=   "stable"
+ * __author_		=	Alireza Panna
+ * __version__		=	1.1
+ * __status__   	=   stable
  * __date__			=	03/04/2015
  * __to-do__		=	add progress bar
  * __update-log__	=	8/10/16: Updated to work for profile or edge derivative fits depending on user choice. 
  * 								 Added option for Pseudo Voigt fitting. Fixed bug in stacking algorithm for fit
  * 								 plots. Update to 1.1 and renamed to stack_find_resolution from stack_find_edge.
  * 								 stack_find_edge is now deprecated.
+ * 						8/11/16: Plot stack is now displayed in RGB.
  */
  
 // Global scan ioc pv name 
 var SCAN_IOC = "HPFI:SCAN:scan1";
-macro "stack_fit_profile" {
+macro "stack_find_resolution" {
 	type_choice = newArray("Profile", "Edge");
 	fit_choice = newArray("Gaussian", "Lorentzian", "Pseudo-Voigt");
     profile_choice = newArray("Horizontal", "Vertical");
@@ -96,7 +97,7 @@ macro "stack_fit_profile" {
   	 		run("Copy");
     		close();
         	if (profile_stack == 0) {
-            	newImage(fit_func + " Fit Plots", "8-bit", w, h, 1);
+            	newImage(fit_func + " Fit Plots", "RGB", w, h, 1);
             	profile_stack = getTitle();
             	selectImage(profile_stack);
             	run("Paste");
@@ -126,7 +127,7 @@ macro "stack_fit_profile" {
 		print(f, "FWHM (pixel)" + "\t" + "Contrast (pixel)" + "\t" + "Peak position (pixel)" + "\t" + "z (mm)"); 
     	writeFile(f, z, fwhm, contrast, mean);
     }
-	waitForUser("Information", "Fit Completed");
+	waitForUser("Information", fit_func + " Fits Completed");
 }
 // Seperate plotting routine for 2nd order fitting
 function plot3d(z, val) {
