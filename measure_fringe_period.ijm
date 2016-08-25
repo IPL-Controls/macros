@@ -9,6 +9,7 @@
  *  __version__         =   1.0
  *  __to-do__			=				   
  *  __update-log__		= 	8/11/2016: displays the profile plots with the peak selections as well.
+ *  					=   8/25/2016: fix minor bug in handling of stacks vs single image.
  */
 var 
     window_type = "None",
@@ -35,6 +36,7 @@ macro "measure_fringe_period" {
   	profile_stack = 0;
 	for (i = 1; i <= nSlices; i++) {
 		// Remove scaling
+		max_loc = newArray();
 		setSlice(i);
 		run("Set Scale...", "distance=0 global");
 		type = selectionType();
@@ -69,25 +71,31 @@ macro "measure_fringe_period" {
 		Plot.add("circles",max_loc, yOfmax);
 		Plot.setColor("red");
 		Plot.show();
-		selectWindow("Plot");
-		run("Copy");
-		close();	
-		if (profile_stack == 0) {
-            newImage("Profile Plots", "RGB", w, h, 1);
-            profile_stack = getTitle();
-            selectImage(profile_stack);
-            run("Paste");
-            selectImage(imgname);
-        } 
-        else {
-            selectImage(profile_stack);
-            run("Add Slice");
-            run("Paste");
-            selectImage(imgname);
-        }
-        max_loc = newArray();
-		selectImage(imgname);
+		if (nSlices > 1 || imgname == "Stack") {
+			selectImage("Plot");
+			run("Copy");
+			close();	
+			if (profile_stack == 0 ) {
+            	newImage("Profile Plots", "RGB", w, h, 1);
+            	profile_stack = getTitle();
+            	selectImage(profile_stack);
+            	run("Paste");
+            	selectImage(imgname);
+        	} 
+        	else {
+            	selectImage(profile_stack);
+            	run("Add Slice");
+            	run("Paste");
+            	selectImage(imgname);
+        	}
+        	selectImage(imgname);
+        	print(getInfo("slice.label") + " Fringe Period:" + d2s(fringe_period, 6));
+		}
+		else {
+			print(imgname + " Fringe Period:" + d2s(fringe_period, 6));
+		}
 	}
 	fringe_period = fringe_period/nSlices;
+	print("-----------------------------------------------");
 	print("Average fringe Period:" + d2s(fringe_period, 6));
 }
