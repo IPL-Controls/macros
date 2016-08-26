@@ -191,7 +191,7 @@ macro "Flood Fill Tool - C037B21P085373b75d0L4d1aL3135L4050L6166D57D77D68La5adLb
 }
 */
 var aCmds = newMenu("Alignment Menu Tool",
-	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "Align grating x", "Align grating Rz", "Align phosphor Rx Rz", "-"));
+	newArray("Align Single Mirror", "Find Rx and Y of all mirrors", "Align grating x", "Align grating Rz", "Align phosphor Rx Rz", "Measure Fringe Period", "-"));
 
 macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	cmd = getArgument();
@@ -209,6 +209,9 @@ macro "Alignment Menu Tool - Cf00T0b11AT7b09lTab09iTcb09gTfb09n" {
 	}
 	else if (cmd=="Align phosphor Rx Rz") {
 		runMacro(getDirectory("macros") + "align_phosphor_rx_rz.ijm");
+	}
+	else if (cmd=="Measure Fringe Period") {
+		runMacro(getDirectory("macros") + "measure_fringe_period.ijm");
 	}
 	else if (cmd!="-") {
 		run(cmd);

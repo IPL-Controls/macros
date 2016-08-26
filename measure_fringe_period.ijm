@@ -12,7 +12,6 @@
  *  					=   8/25/2016: fix minor bug in handling of stacks vs single image.
  */
 var 
-    window_type = "None",
     tolerance = 3,
 ;
 requires("1.49i");
