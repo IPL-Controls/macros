@@ -32,8 +32,15 @@ macro "stack_find_resolution" {
     if (nSlices == 1) {
     	// no stack condition
   		d = runMacro("single_find_resolution", args);
+  		sp = split(d, " ");
+    	fwhm = sp[0];
+    	contrast = sp[1];
+    	mean = sp[2];
+    	peak = sp[3];
+    	fit_func = sp[4];
+    	waitForUser("Information", fit_func + " Fit Completed");
     }
-    if (imgname == "Stack" || nSlices > 1) {
+    else if (nSlices > 1) {
     	Dialog.create("Menu");
     	Dialog.addChoice("Fit type:", type_choice, "Profile");
 		Dialog.addChoice("Profile Direction:", profile_choice, "Horizontal");
@@ -129,8 +136,9 @@ macro "stack_find_resolution" {
     		contrast[i-1] = sp[1];
     		mean[i-1] = sp[2];
     		peak[i-1] = sp[3];
+    		fit_func = sp[4];
     		selectImage(imgname);
-     	}	
+    	}
 		if (is_scan == "Yes") {
 			// plot fwhm and contrast vs. scan axis
 			opt_peakz = plot3d(z, contrast);
@@ -145,10 +153,14 @@ macro "stack_find_resolution" {
 		f = File.open(dir + "edge_widths_contrast" + ".txt");
 		print(f, "FWHM (pixel)" + "\t" + "Contrast (DN)" + "\t" + "Peak position (pixels)" + "\t"  + "Peak height (DN)" + "\t" + "Scan Axis"); 
     	writeFile(f, z, fwhm, contrast, mean, peak);
+    	selectImage(fit_func + " Fit Plots");
+    	saveAs("tiff", dir + File.separator + fit_func + " Fit Plots");
+    	waitForUser("Information", fit_func + " Fits Completed");
+
     }
-    selectImage(fit_func + " Fit Plots");
-    saveAs("tiff", dir + File.separator + fit_func + " Fit Plots");
-	waitForUser("Information", fit_func + " Fits Completed");
+    else {
+    	waitForUser("Unknown format!");
+    }
 }
 // Seperate plotting routine for 2nd order fitting
 function plot3d(z, val) {
@@ -209,4 +221,4 @@ function writeFile(f, x, y, p, m, a) {
     	z++;
 	    print(f, zz);
 	}
-}
+}
