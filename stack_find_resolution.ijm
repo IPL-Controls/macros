@@ -14,6 +14,7 @@
  * 						08/11/16: Plot stack is now displayed in RGB.
  * 						09/23/16: Added peak height column to edge_widths_contrast.txt. Peak height is displayed as abs(peak).
  * 						10/30/16: Allow for roi xy translation for image stacks.
+ * 						11/21/16: Fix bug in roi translation, save fit plots stack
  */
  
 // Global scan ioc pv name 
@@ -99,7 +100,11 @@ macro "stack_find_resolution" {
     		selectImage(imgname);
     		setSlice(i);
     		Roi.getBounds(upper_left_x, upper_left_y, width_roi, height_roi);
-    		Roi.move(upper_left_x + roi_x, upper_left_y + roi_y);
+    		// Don't move on the first image
+    		if (i != 1) {
+    			// translate the roi
+    			Roi.move(upper_left_x + roi_x, upper_left_y + roi_y);
+    		}
     		d = runMacro("single_find_resolution", args);
   	 		selectWindow(fit_func + " Fit");
   	 		w = getWidth;
@@ -141,7 +146,9 @@ macro "stack_find_resolution" {
 		print(f, "FWHM (pixel)" + "\t" + "Contrast (DN)" + "\t" + "Peak position (pixels)" + "\t"  + "Peak height (DN)" + "\t" + "Scan Axis"); 
     	writeFile(f, z, fwhm, contrast, mean, peak);
     }
-	waitForUser("Information", "Fits Completed");
+    selectImage(fit_func + " Fit Plots");
+    saveAs("tiff", dir + File.separator + fit_func + " Fit Plots");
+	waitForUser("Information", fit_func + " Fits Completed");
 }
 // Seperate plotting routine for 2nd order fitting
 function plot3d(z, val) {
