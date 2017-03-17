@@ -1,3 +1,20 @@
+/* Automated procedure for reorganizing the ROI's for the 3-by-3 lenses into descending order from the lef to to the right and from the top to the bottom.
+ * 
+ * Report any bugs or questions to alegmoralesm@gmail.com
+ *  
+ *  __author__			=	'Alejandro Morales'
+ *  __bug fixes__		= 	
+ *  __status__          =   "stable" 
+
+ *  __date__            =   "3/17/17"
+ *  __version__         =   "1.0"
+ *  __to-do__			=   work on error checking, 
+ *  __update-log__		= 	
+ *  						
+ *  						
+ *  						
+ */
+
 n = roiManager("count");
 run("Set Measurements...", "area mean min centroid redirect=None decimal=3");
 X = newArray(roiManager("count"));
